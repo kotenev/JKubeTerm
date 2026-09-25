@@ -28,7 +28,6 @@ public final class KubeconfigLoader {
         }
         return result;
     }
-    @SuppressWarnings("unchecked")
     public static List<ContextRef> contexts(List<Path> paths) throws IOException {
         Map<String, ContextRef> found = new LinkedHashMap<>();
         for (Path path : paths) {
@@ -44,8 +43,8 @@ public final class KubeconfigLoader {
         }
         return List.copyOf(found.values());
     }
-    public static Config config(ContextRef context) throws IOException {
+    public static Config config(ContextRef context) {
         // Fabric8 resolves relative certificate/key paths against kubeconfig file path.
-        return Config.fromKubeconfig(context.name(), Files.readString(context.file()), context.file().toString());
+        return Config.fromKubeconfig(context.name(), context.file().toFile());
     }
 }

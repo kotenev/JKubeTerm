@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 /** Safe argv-based invocation: commands never go through a shell. */
 public final class ExternalTools {
     private ExternalTools() {}
-    public static String run(KubeconfigLoader.ContextRef context, String namespace, List<String> command, int timeoutSeconds) throws IOException, InterruptedException {
+    public static String run(KubeconfigLoader.ContextRef context, List<String> command, int timeoutSeconds) throws IOException, InterruptedException {
         List<String> argv = new ArrayList<>(command);
         ProcessBuilder builder = new ProcessBuilder(argv).redirectErrorStream(true);
         builder.environment().put("KUBECONFIG", context.file().toString());

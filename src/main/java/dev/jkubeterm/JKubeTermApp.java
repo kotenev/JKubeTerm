@@ -15,10 +15,10 @@ import javafx.stage.Stage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 
 public final class JKubeTermApp extends Application {
     private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
@@ -36,7 +36,6 @@ public final class JKubeTermApp extends Application {
     private KubernetesService service;
     private Stage stage;
     private List<HasMetadata> currentItems = List.of();
-    private boolean detailsDirty;
 
     @Override public void start(Stage primaryStage) {
         stage = primaryStage;
@@ -49,14 +48,14 @@ public final class JKubeTermApp extends Application {
         kinds.setItems(FXCollections.observableArrayList(ResourceKind.values())); kinds.setPrefWidth(180);
         kinds.getSelectionModel().selectedItemProperty().addListener((obs, old, kind) -> refresh());
         filter.setPromptText("Filter by name…"); filter.textProperty().addListener((obs, old, v) -> showItems());
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         TableColumn<HasMetadata, String> name = column("Name", o -> o.getMetadata().getName());
         TableColumn<HasMetadata, String> namespace = column("Namespace", o -> o.getMetadata().getNamespace());
         TableColumn<HasMetadata, String> kind = column("Kind", HasMetadata::getKind);
         TableColumn<HasMetadata, String> age = column("Created", o -> o.getMetadata().getCreationTimestamp());
-        table.getColumns().addAll(name, namespace, kind, age);
+        table.getColumns().addAll(List.of(name, namespace, kind, age));
         table.getSelectionModel().selectedItemProperty().addListener((obs, old, item) -> {
-            if (item != null && service != null) { details.setText(service.yaml(item)); detailsDirty = false; editMode.setSelected(false); details.setEditable(false); }
+            if (item != null && service != null) { details.setText(service.yaml(item)); editMode.setSelected(false); details.setEditable(false); }
         });
         details.setEditable(false); details.setWrapText(false); details.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
         console.setEditable(false); console.setWrapText(true); console.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
@@ -79,7 +78,7 @@ public final class JKubeTermApp extends Application {
         VBox middle = new VBox(8, filter, table); VBox.setVgrow(table, Priority.ALWAYS);
         SplitPane content = new SplitPane(kinds, middle, right); content.setDividerPositions(.15, .55);
         BorderPane root = new BorderPane(content, top, null, new HBox(8, new Label("JKubeTerm 0.1"), status), null);
-        root.getStylesheets().add(getClass().getResource("/jkubeterm.css").toExternalForm());
+        root.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/jkubeterm.css")).toExternalForm());
         Scene scene = new Scene(root, 1380, 840);
         primaryStage.setTitle("JKubeTerm — Kubernetes Desktop"); primaryStage.setScene(scene); primaryStage.show();
         kinds.getSelectionModel().select(ResourceKind.PODS);
@@ -121,8 +120,8 @@ public final class JKubeTermApp extends Application {
         });
     }
     private void refresh() {
-        if (service == null || kinds.getValue() == null) return;
-        ResourceKind kind = kinds.getValue(); String ns = namespaces.getValue();
+        if (service == null || kinds.getSelectionModel().getSelectedItem() == null) return;
+        ResourceKind kind = kinds.getSelectionModel().getSelectedItem(); String ns = namespaces.getValue();
         status.setText("Loading " + kind.label + "…");
         task(() -> {
             List<HasMetadata> result = List.copyOf(service.list(kind, ns));
@@ -175,7 +174,7 @@ public final class JKubeTermApp extends Application {
         dialog.setContentText("Executable:");
         dialog.showAndWait().filter(s -> !s.isBlank()).ifPresent(command -> {
             var argv = ExternalTools.kubectl(service.context(), ns, "exec", pod, "--", command.strip());
-            task(() -> { String result = ExternalTools.run(service.context(), ns, argv, 30); Platform.runLater(() -> output(result)); });
+            task(() -> { String result = ExternalTools.run(service.context(), argv, 30); Platform.runLater(() -> output(result)); });
         });
     }
     private void portForward() {
@@ -221,7 +220,7 @@ public final class JKubeTermApp extends Application {
     private void helm() {
         if (service == null) return;
         var args = ExternalTools.helm(service.context(), namespaces.getValue() == null ? "default" : namespaces.getValue(), "list", "--all");
-        task(() -> { String result = ExternalTools.run(service.context(), namespaces.getValue(), args, 30); Platform.runLater(() -> output(result)); });
+        task(() -> { String result = ExternalTools.run(service.context(), args, 30); Platform.runLater(() -> output(result)); });
     }
     private void saveYaml() {
         if (details.getText().isBlank()) return;
@@ -239,5 +238,6 @@ public final class JKubeTermApp extends Application {
         for (Process process : portProcesses) if (process.isAlive()) process.destroy();
         worker.shutdownNow(); if (service != null) service.close();
     }
+    @SuppressWarnings("unused")
     public static void main(String[] args) { launch(args); }
 }

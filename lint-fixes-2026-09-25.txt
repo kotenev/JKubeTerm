@@ -1,0 +1,29 @@
+JKubeTerm Lint and Error Fixes - 2026-09-25
+============================================
+
+Summary of changes to fix compiler warnings and errors across 4 source files.
+
+KubernetesService.java:
+- Removed unused imports: KubernetesResourceList, java.util.Map
+- Removed unused import java.io.IOException and throws IOException from constructor
+- Replaced lambda c -> c.getName() with Container::getName method reference
+- Replaced deprecated createOrReplace() with serverSideApply() (fabric8 7.x)
+
+ExternalTools.java:
+- Removed unused 'namespace' parameter from run() method
+
+JKubeTermApp.java:
+- Removed unused import java.util.function.Consumer
+- Added import java.util.Objects
+- Removed unused detailsDirty field and its assignment
+- Replaced deprecated TableView.CONSTRAINED_RESIZE_POLICY with CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
+- Fixed unchecked varargs: addAll(List.of(...)) instead of varargs addAll(...)
+- Wrapped getResource() with Objects.requireNonNull() to prevent NPE
+- Fixed kind.getValue() → kinds.getSelectionModel().getSelectedItem() (ListView has no getValue())
+- Added @SuppressWarnings("unused") on main()
+- Updated ExternalTools.run() callers for new signature
+
+KubeconfigLoader.java:
+- Removed redundant @SuppressWarnings("unchecked")
+- Replaced deprecated Config.fromKubeconfig(String, String, String) with Config.fromKubeconfig(String, File)
+- Removed throws IOException from config() method

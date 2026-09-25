@@ -1,23 +1,21 @@
 package dev.jkubeterm;
 
+import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.utils.Serialization;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /** All network access happens on the UI's worker executor, never on the JavaFX thread. */
 public final class KubernetesService implements AutoCloseable {
     private final KubernetesClient client;
     private final KubeconfigLoader.ContextRef context;
-    public KubernetesService(KubeconfigLoader.ContextRef context) throws IOException {
+    public KubernetesService(KubeconfigLoader.ContextRef context) {
         this.context = Objects.requireNonNull(context);
         Config config = KubeconfigLoader.config(context);
         // TLS verification remains enabled; CA and client certificates come from kubeconfig.
@@ -54,7 +52,7 @@ public final class KubernetesService implements AutoCloseable {
     public List<String> containers(String namespace, String pod) {
         var obj = client.pods().inNamespace(namespace).withName(pod).get();
         if (obj == null || obj.getSpec() == null) return List.of();
-        return obj.getSpec().getContainers().stream().map(c -> c.getName()).toList();
+        return obj.getSpec().getContainers().stream().map(Container::getName).toList();
     }
     public void delete(HasMetadata resource) { client.resource(resource).delete(); }
     public void apply(String yaml, String namespace) {
@@ -66,7 +64,7 @@ public final class KubernetesService implements AutoCloseable {
         if (obj.getMetadata().getNamespace() == null && !isClusterScoped(obj.getKind()))
             obj.getMetadata().setNamespace(namespaceOrDefault(namespace));
         // Explicitly selected edit/create operation; never executed on loading a resource.
-        client.resource(obj).createOrReplace();
+        client.resource(obj).serverSideApply();
     }
     private static boolean isClusterScoped(String kind) {
         return List.of("Node", "Namespace", "PersistentVolume", "ClusterRole", "ClusterRoleBinding", "CustomResourceDefinition", "StorageClass").contains(kind);
