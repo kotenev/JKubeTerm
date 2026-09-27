@@ -34,6 +34,7 @@ public final class JKubeTermApp extends Application {
     private final TextArea console = new TextArea();
     private final TreeView<String> objectView = new TreeView<>();
     private final java.util.Map<TreeItem<String>, ResourceInspector.ExportableEntry> exportableNodes = new java.util.WeakHashMap<>();
+    private final java.util.Map<TreeItem<String>, DrillDown.Target> drillNodes = new java.util.WeakHashMap<>();
     private final Label status = new Label("Choose a context");
     private final TextField filter = new TextField();
     private final CheckBox editMode = new CheckBox("Edit YAML");
@@ -89,7 +90,9 @@ public final class JKubeTermApp extends Application {
             TreeItem<String> selected = objectView.getSelectionModel().getSelectedItem();
             if (selected == null) return;
             ResourceInspector.ExportableEntry entry = exportableNodes.get(selected);
-            if (entry != null) exportEntry(entry);
+            if (entry != null) { exportEntry(entry); return; }
+            DrillDown.Target target = drillNodes.get(selected);
+            if (target != null) followTarget(target);
         });
         details.setEditable(false); details.setWrapText(false); details.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
         console.setEditable(false); console.setWrapText(true); console.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
@@ -115,6 +118,18 @@ public final class JKubeTermApp extends Application {
         details.setPrefRowCount(10); objectView.setPrefHeight(220); console.setPrefRowCount(7);
         VBox middle = new VBox(8, filter, table); VBox.setVgrow(table, Priority.ALWAYS);
         SplitPane content = new SplitPane(kinds, middle, right); content.setDividerPositions(.15, .55);
+        table.setRowFactory(view -> {
+            TableRow<HasMetadata> row = new TableRow<>();
+            row.setOnMouseClicked(click -> {
+                if (click.getClickCount() == 2 && !row.isEmpty() && service != null) drillDown(row.getItem());
+            });
+            ContextMenu menu = new ContextMenu();
+            MenuItem drill = new MenuItem("Drill down…");
+            drill.setOnAction(e -> { if (!row.isEmpty() && service != null) drillDown(row.getItem()); });
+            menu.getItems().add(drill);
+            row.contextMenuProperty().bind(javafx.beans.binding.Bindings.when(row.emptyProperty()).then((ContextMenu) null).otherwise(menu));
+            return row;
+        });
         Menu helpMenu = new Menu("Help");
         MenuItem userGuide = new MenuItem("User guide"); userGuide.setOnAction(e -> help("User guide", userGuideText()));
         MenuItem adminGuide = new MenuItem("Admin guide"); adminGuide.setOnAction(e -> help("Admin guide", adminGuideText()));
@@ -241,15 +256,91 @@ public final class JKubeTermApp extends Application {
             root.getChildren().add(sectionNode);
         }
         if (!inspection.relations().isEmpty()) {
-            TreeItem<String> graph = new TreeItem<>("⇄ Relations");
+            TreeItem<String> graph = new TreeItem<>("⇄ Relations (double-click to drill)");
             graph.setExpanded(true);
             for (ResourceInspector.Relation relation : inspection.relations()) {
                 if (relation.to() == null || relation.to().isEmpty()) continue;
-                graph.getChildren().add(new TreeItem<>(relation.from() + " —[" + relation.label() + "]→ " + relation.to()));
+                TreeItem<String> link = new TreeItem<>(relation.from() + " —[" + relation.label() + "]→ " + relation.to());
+                relationKind(relation).ifPresent(kind ->
+                    drillNodes.put(link, DrillDown.Target.findByName("Open " + relation.to(), "Find " + relation.to() + " in the catalog.", null, relation.to())));
+                graph.getChildren().add(link);
             }
             if (!graph.getChildren().isEmpty()) root.getChildren().add(graph);
         }
         objectView.setRoot(root);
+    }
+    private Optional<ResourceKind> relationKind(ResourceInspector.Relation relation) {
+        return DrillDown.relationTargetKind(relation.label());
+    }
+    private void drillDown(HasMetadata item) {
+        List<DrillDown.Target> targets = DrillDown.targets(item);
+        if (targets.isEmpty()) { info("No drill-down targets for " + item.getKind() + " " + item.getMetadata().getName() + "."); return; }
+        ChoiceDialog<DrillDown.Target> dialog = new ChoiceDialog<>(targets.getFirst(), targets);
+        dialog.setTitle("Drill down");
+        dialog.setHeaderText(item.getKind() + " " + item.getMetadata().getName() + " → related resources");
+        dialog.setContentText("Target:");
+        dialog.showAndWait().ifPresent(this::followTarget);
+    }
+    private void followTarget(DrillDown.Target target) {
+        if (service == null) return;
+        if (target.mode() == DrillDown.Mode.NAMESPACE_SWITCH) {
+            namespaces.getSelectionModel().select(target.namespace());
+            kinds.getSelectionModel().select(ResourceKind.PODS);
+            refresh();
+            return;
+        }
+        status.setText("Drilling to " + target.title() + "…");
+        String currentNs = namespaces.getValue();
+        task(() -> {
+            List<HasMetadata> found = DrillDown.resolve(service, target, currentNs);
+            Platform.runLater(() -> followTargetResult(target, found));
+        });
+    }
+    private void followTargetResult(DrillDown.Target target, List<HasMetadata> found) {
+        if (found.isEmpty()) {
+            info("Nothing found for '" + target.title() + "' in scope " + (target.namespace() != null ? target.namespace() : service.namespaceOrDefault(namespaces.getValue())) + ".");
+            return;
+        }
+        if (target.mode() == DrillDown.Mode.FIND_BY_NAME && target.kind() == null) {
+            String scope = target.namespace() != null ? target.namespace() : namespaces.getValue();
+            status.setText("Drilling to '" + target.exactName() + "'…");
+            task(() -> {
+                Optional<DrillDown.Found> hit = DrillDown.findByName(service, target.exactName(), scope);
+                Platform.runLater(() -> hit.ifPresentOrElse(found1 -> selectFound(found1.kind(), found1.item()),
+                    () -> info("'" + target.exactName() + "' not found in browsable kinds.")));
+            });
+            return;
+        }
+        if (target.mode() == DrillDown.Mode.SELECTING || target.mode() == DrillDown.Mode.USED_BY || target.mode() == DrillDown.Mode.BACKEND) {
+            selectFound(target.kind(), found.getFirst());
+            status.setText(found.size() + " match(es) for '" + target.title() + "' — showing first.");
+            return;
+        }
+        if (found.size() == 1) { selectFound(target.kind(), found.getFirst()); return; }
+        List<String> labels = found.stream().map(item -> item.getKind() + " " + (item.getMetadata() == null ? "" : item.getMetadata().getName())).toList();
+        ChoiceDialog<String> pick = new ChoiceDialog<>(labels.getFirst(), labels);
+        pick.setTitle("Drill down");
+        pick.setHeaderText(found.size() + " matches for '" + target.title() + "'");
+        pick.setContentText("Resource:");
+        pick.showAndWait().ifPresent(label -> {
+            HasMetadata item = found.get(labels.indexOf(label));
+            DrillDown.kindForKindName(item.getKind()).ifPresentOrElse(kind -> selectFound(kind, item), () -> selectFound(target.kind(), item));
+        });
+    }
+    private void selectFound(ResourceKind kind, HasMetadata item) {
+        if (kind != null) kinds.getSelectionModel().select(kind);
+        if (kinds.getSelectionModel().getSelectedItem() != null && item.getMetadata() != null
+            && item.getMetadata().getNamespace() != null && kinds.getSelectionModel().getSelectedItem().namespaced)
+            namespaces.getSelectionModel().select(item.getMetadata().getNamespace());
+        refresh();
+        task(() -> Platform.runLater(() -> {
+            for (HasMetadata row : table.getItems())
+                if (row.getMetadata() != null && Objects.equals(row.getMetadata().getName(), item.getMetadata().getName())) {
+                    table.getSelectionModel().select(row);
+                    table.scrollTo(row);
+                    break;
+                }
+        }));
     }
     private ResourceInspector.ExportableEntry exportableEntry(HasMetadata item, ResourceInspector.Section section, ResourceInspector.Row row) {
         if (!"Data".equals(section.title()) || !row.field().startsWith("key ")) return null;

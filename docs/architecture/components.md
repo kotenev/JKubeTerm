@@ -95,7 +95,7 @@ classDiagram
 | Top toolbar | `ComboBox<KubeconfigLoader.ContextRef>` (w=265), **Connect**, **↻ Config**, `ComboBox<String>` namespaces (w=165), **Refresh**, **Diagnose** | Connect → `connect()` (failure prints `ConnectionDiagnostics.describe` to console); ↻ Config → `loadContexts()`; namespace change → `refresh()`; Diagnose → `diagnose()` (step-by-step `[OK]/[FAIL]` + FIX hints) |
 | Tutorial hint | `Label.tutorial-hint` under toolbar (hidden unless touring) | `«Tutorial i/N — title + body»`; Next/Finish advances, Exit stops and clears highlight |
 | Left | `ListView<ResourceKind>` (w=180) | All 14 kinds; selection → `refresh()` |
-| Middle | filter `TextField` + `TableView<HasMetadata>` | Columns Name / Namespace / Kind / Created; filter applies locally (lowercase `contains`) via `showItems()`; constrained flex-last-column resize |
+| Middle | filter `TextField` + `TableView<HasMetadata>` | Columns Name / Namespace / Kind / Created; filter applies locally (lowercase `contains`) via `showItems()`; constrained flex-last-column resize; double-click / right-click «Drill down…» → `drillDown()` (targets dialog → worker `resolve` → `selectFound`); `⇄ Relations` double-click → catalog-wide `findByName` |
 | Right | Edit-mode checkbox, Apply YAML, Delete, Pod logs, Exec command, Port forward, Scale, Restart, Helm releases, Save YAML…, New YAML; manifest `TextArea`; **Object** `TreeView` (`ResourceInspector`); console `TextArea` | FlowPane of actions; `editMode.selectedProperty` toggles manifest editability; row selection loads `service.yaml(item)` + `showObject(item)` (typed sections + ⇄ Relations graph) and resets edit mode; ConfigMap PEM rows (`⤓`, `isPemCertificate`) double-click → `exportEntry()` FileChooser save |
 | Bottom | status `Label` | Every state transition writes a status message |
 
@@ -172,6 +172,31 @@ full untruncated value via `exportEntry()` (`ExportableEntry(kind, name, key,
 value)`, `exportableEntries()` — pure data, Secret values stay excluded).
 Covered by `ResourceInspectorTest` (14 tests incl. secret non-exposure and
 certificate export).
+
+### Drill-down navigation
+
+`DrillDown` (`src/main/java/dev/jkubeterm/DrillDown.java:14`) is a static,
+JavaFX-free navigator: `targets(HasMetadata)` proposes typed `Target`s per kind
+(Pod → node/exact, Events/about, Services/selecting, ConfigMaps+PVCs/exact,
+Job/exact from `job-name` label; Deployment/StatefulSet/DaemonSet → Pods/by-labels;
+StatefulSet → headless Service + `data-<name>-` PVCs; Service → Pods/by-labels +
+Ingresses/backend; ConfigMap → workloads/used-by; Job → Pods/`job-name`,
+CronJob → Jobs/owned-by; Ingress → Services/exact; PVC → PV/exact + pods/used-by;
+PV → PVC/exact; Node → Pods/on-node; Namespace → namespace-switch; Event →
+involved object via `kindForKindName`). `resolve(service, target, currentNs)`
+runs the API fan-out on the worker (`EXACT_NAME`, `BY_LABELS` via
+`matchesLabels`, `BY_NAME_PREFIX`, `OWNED_BY` via ownerReferences, `USED_BY`
+scanning workload pod-specs for configmap/secret/pvc refs, `BACKEND` scanning
+Ingress backends, `ON_NODE` by `spec.nodeName`, `ABOUT` by involved object,
+`SELECTING` by service selectors, `FIND_BY_NAME` across the catalog order).
+UI: table double-click / context menu → `drillDown()` ChoiceDialog →
+`followTarget()` (worker resolve) → `followTargetResult()` (single → direct
+`selectFound(kind, item)` with kind+namespace switch and row focus; multi →
+label picker) → `selectFound()` switches kind/namespace, refreshes and focuses
+the row. Object-view `⇄ Relations` links double-click into catalog-wide
+`findByName` (`relationTargetKind` maps route/mounts/bound labels to kinds).
+Covered by `DrillDownTest` (14 tests: targets per kind, matchers, pod-spec
+extraction, ref scanners).
 
 ## 3. `KubernetesService` — Fabric8 facade
 

@@ -36,6 +36,14 @@ deployments), **First deploy drill** (шаблон → правка → namespac
 
 ## Навигация и просмотр {#browse}
 
+Двойной клик по строке таблицы (или правый клик → Drill down…) открывает
+связанные ресурсы: Pod → Node/Events/Services/ConfigMap/PVC/Job, Deployment →
+свои Pod'ы, Service → Pod'ы за селектором + Ingress'ы, Ingress → backend
+Service'ы, PVC ⇄ PV, Node → Pod'ы на нём, Namespace → переключение комбо,
+Event → involved object. Строки `⇄ Relations` в Object view тоже кликабельны
+(поиск по каталогу видов). Несколько совпадений — диалог выбора, один —
+прямой переход с фокусом на строке.
+
 - **Kinds** (слева): 14 видов из `ResourceKind` (`PODS` выбран стартово).
   Кластерные (`Nodes`, `Namespaces`, `PersistentVolumes`) игнорируют namespace;
   остальным пустой namespace = `default` (`KubernetesService.java:25`).
