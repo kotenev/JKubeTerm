@@ -51,8 +51,6 @@ public final class JKubeTermApp extends Application {
     private Button helmButton;
     private Button saveButton;
     private Button newYamlButton;
-    private BorderPane rootPane;
-    private HBox topBar;
     private FlowPane actionsPane;
     private Label tutorialHint;
 
@@ -64,7 +62,6 @@ public final class JKubeTermApp extends Application {
         refreshButton = new Button("Refresh"); refreshButton.setOnAction(e -> refresh());
         HBox top = new HBox(8, new Label("Context"), contexts, connectButton, reloadContextsButton, new Label("Namespace"), namespaces, refreshButton);
         top.setPadding(new Insets(10)); top.getStyleClass().add("toolbar");
-        topBar = top;
         kinds.setItems(FXCollections.observableArrayList(ResourceKind.values())); kinds.setPrefWidth(180);
         kinds.getSelectionModel().selectedItemProperty().addListener((obs, old, kind) -> refresh());
         filter.setPromptText("Filter by name…"); filter.textProperty().addListener((obs, old, v) -> showItems());
@@ -120,7 +117,6 @@ public final class JKubeTermApp extends Application {
         tutorialHint.setManaged(false);
         tutorialHint.getStyleClass().add("tutorial-hint");
         BorderPane root = new BorderPane(content, new VBox(menuBar, top, tutorialHint), null, new HBox(8, new Label("JKubeTerm 0.1"), status), null);
-        rootPane = root;
         root.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/jkubeterm.css")).toExternalForm());
         Scene scene = new Scene(root, 1380, 840);
         primaryStage.setTitle("JKubeTerm — Kubernetes Desktop"); primaryStage.setScene(scene); primaryStage.show();
