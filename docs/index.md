@@ -57,6 +57,7 @@ flowchart LR
 
 ## Documentation map
 
+- **UI Wireframe** — interactive `draw.io` mockup (`docs/ui-wireframe.drawio`) with clickable links connecting each UI element to architecture docs (`docs/ui-wireframe.md`)
 - **Architecture**
   - [Overview](architecture/overview.md) — scope, principles, context view, stack
   - [Components & modules](architecture/components.md) — every class, its API and collaborators
@@ -76,11 +77,12 @@ flowchart LR
 
 ```bash
 python3 -m pip install -r requirements-docs.txt
+docker compose up -d          # local PlantUML server at http://localhost:8080
 mkdocs serve   # live preview at http://127.0.0.1:8000
 mkdocs build   # static site in site/
 ```
 
 Mermaid diagrams render in the browser (Mermaid 11 is loaded from a CDN).
-PlantUML sources are published as code blocks; render them with the
-[PlantUML server](https://www.plantuml.com/plantuml), the PlantUML JAR
-(`plantuml -tpng file.puml`), or the IntelliJ PlantUML integration.
+PlantUML diagrams on [diagrams/plantuml.md](diagrams/plantuml.md) render as
+inline SVG previews via the local PlantUML server (`docker compose up -d`
+→ `http://localhost:8080`); sources stay editable as text after each preview.

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-09-27T17:30:00Z" agent="Mozilla/5.0" etag="JKubeTerm-UI-001" version="25.0.0" type="device">
+<diagram id="main-ui" name="JKubeTerm — Main UI Wireframe">
+  <mxGraphModel dx="1430" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1430" pageHeight="900" math="0" shadow="0">
+    <root>
+      <mxCell id="0" />
+      <mxCell id="1" parent="0" />
+      <mxCell id="win" value="JKubeTerm 0.1" style="rounded=1;fillColor=#17212d;strokeColor=#4d9cf7;fontColor=#e7eef8;fontSize=16;align=center" vertex="1" parent="1">
+        <mxGeometry x="20" y="30" width="1390" height="840" as="geometry" />
+      </mxCell>
+      <mxCell id="toolbar" value="Top Toolbar" style="rounded=0;fillColor=#203044;strokeColor=#365d86;fontColor=#dce8f6;fontSize=12;align=center" vertex="1" parent="1">
+        <mxGeometry x="20" y="80" width="1390" height="55" as="geometry" />
+      </mxCell>
+      <mxCell id="lbl_ctx" value="Context combo" style="rounded=1;fillColor=#1b2836;strokeColor=#4d9cf7;fontColor=#e7eef8;fontSize=11;align=center" vertex="1" parent="1">
+        <mxGeometry x="40" y="95" width="140" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="btn_connect" value="Connect" style="rounded=1;fillColor=#4d9cf7;strokeColor=#205b91;fontColor=#fff;fontSize=11;align=center" vertex="1" parent="1">
+        <mxGeometry x="200" y="95" width="90" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="btn_reload" value="↻ Config" style="rounded=1;fillColor=#365d86;strokeColor=#205b91;fontColor=#fff;fontSize=11;align=center" vertex="1" parent="1">
+        <mxGeometry x="310" y="95" width="90" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="btn_refresh" value="Refresh" style="rounded=1;fillColor=#4d9cf7;strokeColor=#205b91;fontColor=#fff;fontSize=11;align=center" vertex="1" parent="1">
+        <mxGeometry x="610" y="95" width="90" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="kind_panel" value="Resource Kinds (14 browsable kinds: Pods, Deployments, ...)" style="rounded=1;fillColor=#203044;strokeColor=#365d86;fontColor=#e7eef8;fontSize=10;align=left" vertex="1" parent="1">
+        <mxGeometry x="20" y="150" width="180" height="600" as="geometry" />
+      </mxCell>
+      <mxCell id="table" value="Table: Name / Namespace / Kind / Created — rows from KubernetesService.list() → currentItems (List&lt;HasMetadata&gt;)" style="rounded=1;fillColor=#243142;strokeColor=#4d9cf7;fontColor=#e7eef8;fontSize=9;align=left" vertex="1" parent="1">
+        <mxGeometry x="240" y="200" width="720" height="520" as="geometry" />
+      </mxCell>
+      <mxCell id="filter" value="Filter by name — local filter (case-insensitive contains on name)" style="rounded=1;fillColor=#17212d;strokeColor=#4d9cf7;fontColor=#e7eef8;fontSize=11;align=left" vertex="1" parent="1">
+        <mxGeometry x="240" y="160" width="720" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="manifest" value="Manifest Editor — YAML view (Serialization.asYaml). Read-only by default; editable with Edit YAML checkbox → applies via KubernetesService.apply()" style="rounded=1;fillColor=#17212d;strokeColor=#4d9cf7;fontColor=#e7eef8;fontSize=10;align=left" vertex="1" parent="1">
+        <mxGeometry x="1020" y="320" width="370" height="180" as="geometry" />
+      </mxCell>
+      <mxCell id="console" value="Console — latest output from task() results via Platform.runLater. Overwritten by each operation (not streaming)." style="rounded=1;fillColor=#17212d;strokeColor=#4d9cf7;fontColor=#e7eef8;fontSize=10;align=left" vertex="1" parent="1">
+        <mxGeometry x="1020" y="530" width="370" height="150" as="geometry" />
+      </mxCell>
+      <mxCell id="status" value="Status bar: JKubeTerm 0.1 — status updates from loadContexts(), connect(), refresh(), error(), stop()" style="rounded=0;fillColor=#203044;strokeColor=#365d86;fontColor=#e7eef8;fontSize=11;align=center" vertex="1" parent="1">
+        <mxGeometry x="20" y="780" width="1390" height="40" as="geometry" />
+      </mxCell>
+      <!-- Clickable hyperlinks (clickable links to docs) -->
+      <mxCell id="doc_link1" value="Link → docs/architecture/components.md (toolbar + components)" style="rounded=1;fillColor=#243142;strokeColor=#4d9cf7;fontColor=#4d9cf7;fontSize=9;align=center" vertex="1" parent="1">
+        <mxGeometry x="1440" y="90" width="170" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="doc_link2" value="Link → docs/architecture/resources.md (14 kinds + Fabric8 DSL mapping)" style="rounded=1;fillColor=#243142;strokeColor=#4d9cf7;fontColor=#4d9cf7;fontSize=9;align=center" vertex="1" parent="1">
+        <mxGeometry x="1440" y="155" width="170" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="doc_link3" value="Link → docs/architecture/data-flow.md (connect + apply + delete + refresh sequences)" style="rounded=1;fillColor=#243142;strokeColor=#4d9cf7;fontColor=#4d9cf7;fontSize=9;align=center" vertex="1" parent="1">
+        <mxGeometry x="1440" y="210" width="170" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="doc_link4" value="Link → docs/architecture/threading.md (FX thread vs worker, task(), Platform.runLater)" style="rounded=1;fillColor=#243142;strokeColor=#4d9cf7;fontColor=#4d9cf7;fontSize=9;align=center" vertex="1" parent="1">
+        <mxGeometry x="1440" y="780" width="170" height="30" as="geometry" />
+      </mxCell>
+    </root>
+  </mxGraphModel>
+</diagram>
+</mxfile>

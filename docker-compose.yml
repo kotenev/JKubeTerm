@@ -1,0 +1,7 @@
+services:
+  plantuml-server:
+    image: plantuml/plantuml-server:latest
+    container_name: plantuml-server
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

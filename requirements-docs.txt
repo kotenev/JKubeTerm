@@ -7,5 +7,6 @@ mkdocs-material>=9.5,<10
 pymdown-extensions>=10.7,<11
 
 # Optional: server-side PlantUML rendering inside Markdown.
-# Uncomment together with the "plantuml" entry in mkdocs.yml plugins (not enabled by default).
-# plantuml-markdown>=3.10
+# Uses the local PlantUML server from docker-compose.yml (http://localhost:8080).
+# Requires markdown-config.yml / mkdocs.yml plantuml_markdown section.
+plantuml-markdown>=3.10

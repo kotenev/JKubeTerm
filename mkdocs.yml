@@ -25,6 +25,12 @@ markdown_extensions:
   - attr_list
   - def_list
   - tables
+  - plantuml_markdown:
+      servers:
+        - url: http://localhost:8080
+      format: svg
+      http_method: GET
+      base_dir: docs
   - toc:
       permalink: true
   - pymdownx.details
