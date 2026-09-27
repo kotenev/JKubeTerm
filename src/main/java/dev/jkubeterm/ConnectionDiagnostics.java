@@ -37,12 +37,11 @@ public final class ConnectionDiagnostics {
     }
 
     public static String describe(KubeconfigLoader.ContextRef context, Throwable failure) {
-        StringBuilder report = new StringBuilder();
-        report.append("Connect to '").append(context.name()).append("' failed: ")
-            .append(failure == null ? "unknown error" : String.valueOf(failure.getMessage())).append('\n');
-        report.append(causeHint(failure)).append('\n');
-        report.append(diagnose(context));
-        return report.toString();
+        String report = "Connect to '" + context.name() + "' failed: "
+            + (failure == null ? "unknown error" : String.valueOf(failure.getMessage())) + '\n'
+            + causeHint(failure) + '\n'
+            + diagnose(context);
+        return report;
     }
 
     static List<Check> runChecks(KubeconfigLoader.ContextRef context) {
@@ -76,8 +75,9 @@ public final class ConnectionDiagnostics {
             return new Check("API endpoint", false, "empty master URL",
                 "Check the cluster.server entry for this context.");
         String host = url.replaceFirst("^[a-zA-Z][a-zA-Z0-9+.-]*://", "").replaceFirst("[:/].*$", "");
+        String resolved;
         try {
-            java.net.InetAddress.getByName(host);
+            resolved = java.net.InetAddress.getByName(host).getHostAddress();
         } catch (Exception e) {
             return new Check("API endpoint", false, host + " does not resolve (" + e.getMessage() + ")",
                 "For minikube: 'minikube status' / 'minikube start'. For remote: check DNS/VPN.");
@@ -85,7 +85,7 @@ public final class ConnectionDiagnostics {
         try (var socket = new java.net.Socket()) {
             int port = portOf(url);
             socket.connect(new java.net.InetSocketAddress(host, port), 5000);
-            return new Check("API endpoint", true, host + ":" + port + " accepts TCP", null);
+            return new Check("API endpoint", true, host + " (" + resolved + "):" + port + " accepts TCP", null);
         } catch (Exception e) {
             return new Check("API endpoint", false, url + " refused (" + e.getMessage() + ")",
                 "Start the cluster ('minikube start'), or fix the server address.");
