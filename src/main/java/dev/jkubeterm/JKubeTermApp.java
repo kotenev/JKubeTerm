@@ -6,6 +6,7 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -14,6 +15,7 @@ import javafx.stage.Stage;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,15 +38,33 @@ public final class JKubeTermApp extends Application {
     private KubernetesService service;
     private Stage stage;
     private List<HasMetadata> currentItems = List.of();
+    private Button connectButton;
+    private Button reloadContextsButton;
+    private Button refreshButton;
+    private Button applyButton;
+    private Button removeButton;
+    private Button logsButton;
+    private Button shellButton;
+    private Button forwardButton;
+    private Button scaleButton;
+    private Button restartButton;
+    private Button helmButton;
+    private Button saveButton;
+    private Button newYamlButton;
+    private BorderPane rootPane;
+    private HBox topBar;
+    private FlowPane actionsPane;
+    private Label tutorialHint;
 
     @Override public void start(Stage primaryStage) {
         stage = primaryStage;
         contexts.setPrefWidth(265); namespaces.setPrefWidth(165);
-        Button connect = new Button("Connect"); connect.setOnAction(e -> connect());
-        Button reloadContexts = new Button("↻ Config"); reloadContexts.setOnAction(e -> loadContexts());
-        Button refresh = new Button("Refresh"); refresh.setOnAction(e -> refresh());
-        HBox top = new HBox(8, new Label("Context"), contexts, connect, reloadContexts, new Label("Namespace"), namespaces, refresh);
+        connectButton = new Button("Connect"); connectButton.setOnAction(e -> connect());
+        reloadContextsButton = new Button("↻ Config"); reloadContextsButton.setOnAction(e -> loadContexts());
+        refreshButton = new Button("Refresh"); refreshButton.setOnAction(e -> refresh());
+        HBox top = new HBox(8, new Label("Context"), contexts, connectButton, reloadContextsButton, new Label("Namespace"), namespaces, refreshButton);
         top.setPadding(new Insets(10)); top.getStyleClass().add("toolbar");
+        topBar = top;
         kinds.setItems(FXCollections.observableArrayList(ResourceKind.values())); kinds.setPrefWidth(180);
         kinds.getSelectionModel().selectedItemProperty().addListener((obs, old, kind) -> refresh());
         filter.setPromptText("Filter by name…"); filter.textProperty().addListener((obs, old, v) -> showItems());
@@ -55,11 +75,11 @@ public final class JKubeTermApp extends Application {
         TableColumn<HasMetadata, String> age = column("Created", o -> o.getMetadata().getCreationTimestamp());
         table.getColumns().addAll(List.of(name, namespace, kind, age));
         table.getSelectionModel().selectedItemProperty().addListener((obs, old, item) -> {
-            if (item != null && service != null) { details.setText(service.yaml(item)); editMode.setSelected(false); details.setEditable(false); }
+            if (item != null && service != null) { details.setText(service.yaml(item)); editMode.setSelected(false); details.setEditable(false); advanceTutorial("select-row"); }
         });
         details.setEditable(false); details.setWrapText(false); details.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
         console.setEditable(false); console.setWrapText(true); console.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
-        editMode.selectedProperty().addListener((obs, old, enabled) -> details.setEditable(enabled));
+        editMode.selectedProperty().addListener((obs, old, enabled) -> { details.setEditable(enabled); if (enabled) advanceTutorial("edit-mode"); });
         Button apply = new Button("Apply YAML"); apply.setOnAction(e -> applyYaml());
         Button remove = new Button("Delete"); remove.setOnAction(e -> deleteSelected());
         Button logs = new Button("Pod logs"); logs.setOnAction(e -> logs());
@@ -69,9 +89,13 @@ public final class JKubeTermApp extends Application {
         Button restart = new Button("Restart"); restart.setOnAction(e -> restart());
         Button helm = new Button("Helm releases"); helm.setOnAction(e -> helm());
         Button save = new Button("Save YAML…"); save.setOnAction(e -> saveYaml());
-        Button newYaml = new Button("New YAML"); newYaml.setOnAction(e -> { details.setText("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: example\ndata:\n  key: value\n"); editMode.setSelected(true); });
+        Button newYaml = new Button("New YAML"); newYaml.setOnAction(e -> { details.setText("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: example\ndata:\n  key: value\n"); editMode.setSelected(true); advanceTutorial("new-yaml"); });
+        applyButton = apply; removeButton = remove; logsButton = logs; shellButton = shell;
+        forwardButton = forward; scaleButton = scale; restartButton = restart;
+        helmButton = helm; saveButton = save; newYamlButton = newYaml;
         FlowPane actions = new FlowPane(6, 6, editMode, apply, remove, logs, shell, forward, scale, restart, helm, save, newYaml);
         actions.setPadding(new Insets(8));
+        actionsPane = actions;
         VBox right = new VBox(8, actions, new Label("Manifest"), details, new Label("Output / logs"), console);
         VBox.setVgrow(details, Priority.ALWAYS); VBox.setVgrow(console, Priority.ALWAYS);
         details.setPrefRowCount(16); console.setPrefRowCount(9);
@@ -83,8 +107,20 @@ public final class JKubeTermApp extends Application {
         MenuItem quickstart = new MenuItem("QuickStart — minikube home lab"); quickstart.setOnAction(e -> help("QuickStart", quickstartText()));
         MenuItem about = new MenuItem("About JKubeTerm"); about.setOnAction(e -> help("About JKubeTerm", aboutText()));
         helpMenu.getItems().addAll(userGuide, adminGuide, quickstart, new SeparatorMenuItem(), about);
-        MenuBar menuBar = new MenuBar(helpMenu); menuBar.setUseSystemMenuBar(true);
-        BorderPane root = new BorderPane(content, new VBox(menuBar, top), null, new HBox(8, new Label("JKubeTerm 0.1"), status), null);
+        Menu tutorialMenu = new Menu("Tutorial");
+        MenuItem guidedTour = new MenuItem("Start guided tour"); guidedTour.setOnAction(e -> startTutorial(Tutorial.guidedTour()));
+        MenuItem firstDeploy = new MenuItem("First deploy drill"); firstDeploy.setOnAction(e -> startTutorial(Tutorial.firstDeploy()));
+        MenuItem debugFlow = new MenuItem("Debug flow drill"); debugFlow.setOnAction(e -> startTutorial(Tutorial.debugFlow()));
+        MenuItem stopTutorial = new MenuItem("Stop tutorial"); stopTutorial.setOnAction(e -> stopTutorial());
+        tutorialMenu.getItems().addAll(guidedTour, firstDeploy, debugFlow, new SeparatorMenuItem(), stopTutorial);
+        MenuBar menuBar = new MenuBar(helpMenu, tutorialMenu); menuBar.setUseSystemMenuBar(true);
+        tutorialHint = new Label();
+        tutorialHint.setWrapText(true);
+        tutorialHint.setVisible(false);
+        tutorialHint.setManaged(false);
+        tutorialHint.getStyleClass().add("tutorial-hint");
+        BorderPane root = new BorderPane(content, new VBox(menuBar, top, tutorialHint), null, new HBox(8, new Label("JKubeTerm 0.1"), status), null);
+        rootPane = root;
         root.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/jkubeterm.css")).toExternalForm());
         Scene scene = new Scene(root, 1380, 840);
         primaryStage.setTitle("JKubeTerm — Kubernetes Desktop"); primaryStage.setScene(scene); primaryStage.show();
@@ -122,6 +158,7 @@ public final class JKubeTermApp extends Application {
                     namespaces.getSelectionModel().select(ns.contains("default") ? "default" : ns.isEmpty() ? null : ns.getFirst());
                     status.setText("Connected: " + selected.name() + " | Kubernetes " + version);
                     refresh();
+                    advanceTutorial("connect");
                 });
             } catch (Exception e) { next.close(); throw e; }
         });
@@ -132,7 +169,7 @@ public final class JKubeTermApp extends Application {
         status.setText("Loading " + kind.label + "…");
         task(() -> {
             List<HasMetadata> result = List.copyOf(service.list(kind, ns));
-            Platform.runLater(() -> { currentItems = result; showItems(); status.setText(result.size() + " " + kind.label + " | " + service.context().name()); });
+            Platform.runLater(() -> { currentItems = result; showItems(); status.setText(result.size() + " " + kind.label + " | " + service.context().name()); advanceTutorial("refresh"); });
         });
     }
     private void showItems() {
@@ -149,16 +186,17 @@ public final class JKubeTermApp extends Application {
         if (service == null || details.getText().isBlank()) return;
         if (!confirm("Apply resource YAML", "Create or replace the resource in context " + service.context().name() + "? Review the manifest and namespace before continuing.")) return;
         String yaml = details.getText(), namespace = namespaces.getValue();
-        task(() -> { service.apply(yaml, namespace); Platform.runLater(() -> { output("Applied YAML successfully.\n"); refresh(); }); });
+        task(() -> { service.apply(yaml, namespace); Platform.runLater(() -> { output("Applied YAML successfully.\n"); refresh(); advanceTutorial("apply"); }); });
     }
     private void deleteSelected() {
         var item = selected(); if (item == null || service == null) return;
         if (!confirm("Delete resource", "Delete " + item.getKind() + " / " + item.getMetadata().getName() + " from " + service.context().name() + "?")) return;
-        task(() -> { service.delete(item); Platform.runLater(() -> { output("Delete request submitted.\n"); refresh(); }); });
+        task(() -> { service.delete(item); Platform.runLater(() -> { output("Delete request submitted.\n"); refresh(); advanceTutorial("delete"); }); });
     }
     private void logs() {
         var item = selected(); if (item == null || service == null) return;
         if (!"Pod".equals(item.getKind())) { info("Select a Pod to read logs."); return; }
+        advanceTutorial("logs");
         String ns = item.getMetadata().getNamespace(), pod = item.getMetadata().getName();
         task(() -> {
             List<String> containers = service.containers(ns, pod);
@@ -176,6 +214,7 @@ public final class JKubeTermApp extends Application {
     private void exec() {
         var item = selected(); if (item == null || service == null) return;
         if (!"Pod".equals(item.getKind())) { info("Select a Pod for exec."); return; }
+        advanceTutorial("exec");
         String ns = item.getMetadata().getNamespace(), pod = item.getMetadata().getName();
         TextInputDialog dialog = new TextInputDialog("/bin/sh"); dialog.setHeaderText("Container command (single executable, no shell parsing)");
         dialog.setContentText("Executable:");
@@ -187,6 +226,7 @@ public final class JKubeTermApp extends Application {
     private void portForward() {
         var item = selected(); if (item == null || service == null) return;
         if (!List.of("Pod", "Service").contains(item.getKind())) { info("Select a Pod or Service."); return; }
+        advanceTutorial("forward");
         TextInputDialog dialog = new TextInputDialog("8080:80"); dialog.setHeaderText("Port forwarding: local:remote");
         dialog.showAndWait().ifPresent(ports -> {
             if (!ports.matches("[0-9]{1,5}:[0-9]{1,5}")) { info("Expected local:remote, e.g. 8080:80"); return; }
@@ -237,6 +277,76 @@ public final class JKubeTermApp extends Application {
         if (file != null) try { Files.writeString(file.toPath(), details.getText()); } catch (Exception ex) { error("Save failed", ex); }
     }
     private void output(String message) { console.setText(message); }
+    private Tutorial tutorial;
+    private int tutorialIndex = -1;
+    private final List<Node> tutorialHighlighted = new ArrayList<>();
+    private Button tutorialNextButton;
+    private Button tutorialSkipButton;
+    private void startTutorial(Tutorial tour) {
+        stopTutorial();
+        tutorial = tour;
+        tutorialIndex = -1;
+        nextTutorialStep();
+    }
+    private void stopTutorial() {
+        tutorial = null;
+        tutorialIndex = -1;
+        clearTutorialHighlight();
+        if (tutorialHint != null) { tutorialHint.setText(""); tutorialHint.setVisible(false); tutorialHint.setManaged(false); }
+        if (tutorialNextButton != null) { actionsPane.getChildren().remove(tutorialNextButton); tutorialNextButton = null; }
+        if (tutorialSkipButton != null) { actionsPane.getChildren().remove(tutorialSkipButton); tutorialSkipButton = null; }
+    }
+    private void nextTutorialStep() {
+        if (tutorial == null) return;
+        tutorialIndex++;
+        if (tutorialIndex >= tutorial.steps().size()) {
+            String done = tutorial.doneText();
+            stopTutorial();
+            info(done);
+            return;
+        }
+        showTutorialStep(tutorial.steps().get(tutorialIndex));
+    }
+    private void showTutorialStep(Tutorial.Step step) {
+        clearTutorialHighlight();
+        List<Node> targets = new ArrayList<>();
+        for (String id : step.targetIds()) {
+            Node node = tutorialNode(id);
+            if (node != null) targets.add(node);
+        }
+        for (Node node : targets) {
+            node.getStyleClass().add("tutorial-target");
+            tutorialHighlighted.add(node);
+        }
+        tutorialHint.setText("Tutorial " + (tutorialIndex + 1) + "/" + tutorial.steps().size() + " — " + step.title() + "\n" + step.body());
+        tutorialHint.setVisible(true);
+        tutorialHint.setManaged(true);
+        ensureTutorialButtons();
+        String nextLabel = tutorialIndex + 1 >= tutorial.steps().size() ? "Finish" : "Next";
+        tutorialNextButton.setText(nextLabel);
+        for (Node node : targets) node.requestFocus();
+    }
+    private void ensureTutorialButtons() {
+        if (tutorialNextButton == null) {
+            tutorialNextButton = new Button("Next");
+            tutorialNextButton.setOnAction(e -> nextTutorialStep());
+            actionsPane.getChildren().add(tutorialNextButton);
+        }
+        if (tutorialSkipButton == null) {
+            tutorialSkipButton = new Button("Exit tutorial");
+            tutorialSkipButton.setOnAction(e -> stopTutorial());
+            actionsPane.getChildren().add(tutorialSkipButton);
+        }
+    }
+    private void clearTutorialHighlight() {
+        for (Node node : tutorialHighlighted) node.getStyleClass().remove("tutorial-target");
+        tutorialHighlighted.clear();
+    }
+    private void advanceTutorial(String event) {
+        if (tutorial == null || tutorialIndex < 0 || tutorialIndex >= tutorial.steps().size()) return;
+        Tutorial.Step step = tutorial.steps().get(tutorialIndex);
+        if (step.advanceOn().contains(event)) nextTutorialStep();
+    }
     private void help(String title, String body) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION, body, ButtonType.OK);
         alert.setTitle(title); alert.setHeaderText(title);
@@ -280,6 +390,33 @@ public final class JKubeTermApp extends Application {
             JKubeTerm 0.1 — JavaFX 21 desktop Kubernetes client (Fabric8 7.3.1).
             Blocking I/O on worker jkubeterm-kubernetes-io, UI updates via Platform.runLater.
             Docs: http://127.0.0.1:8000/ — architecture, diagrams, guides.""";
+    }
+    private Node tutorialNode(String id) {
+        return switch (id) {
+            case "contexts" -> contexts;
+            case "connect" -> connectButton;
+            case "reload-contexts" -> reloadContextsButton;
+            case "namespaces" -> namespaces;
+            case "refresh" -> refreshButton;
+            case "kinds" -> kinds;
+            case "filter" -> filter;
+            case "table" -> table;
+            case "details" -> details;
+            case "editMode" -> editMode;
+            case "apply" -> applyButton;
+            case "remove" -> removeButton;
+            case "logs" -> logsButton;
+            case "shell" -> shellButton;
+            case "forward" -> forwardButton;
+            case "scale" -> scaleButton;
+            case "restart" -> restartButton;
+            case "helm" -> helmButton;
+            case "save" -> saveButton;
+            case "newYaml" -> newYamlButton;
+            case "console" -> console;
+            case "status" -> status;
+            default -> null;
+        };
     }
     private void info(String message) { Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK); alert.setHeaderText(null); alert.showAndWait(); }
     private void error(String title, Throwable ex) { status.setText(title + ": " + ex.getMessage()); Alert alert = new Alert(Alert.AlertType.ERROR, ex.getMessage() == null ? ex.toString() : ex.getMessage(), ButtonType.OK); alert.setTitle(title); alert.setHeaderText(title); alert.show(); }

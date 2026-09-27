@@ -10,6 +10,17 @@ JKubeTerm — десктопный Kubernetes-клиент (JavaFX 21, Fabric8 7
 
 ## Запуск и подключение {#connect}
 
+Меню **Tutorial** (рядом с Help) запускает интерактивный тур прямо в приложении:
+**Start guided tour** (7 шагов: connect → browse → manifest → apply → pod tools →
+deployments), **First deploy drill** (шаблон → правка → namespace → apply → найти →
+удалить) и **Debug flow drill** (Pod → logs → console → exec → forward).
+Целевые элементы подсвечиваются классом `tutorial-target` (жёлтая рамка +
+тень, `jkubeterm.css`), сверху висит подсказка `«Tutorial i/N — шаг»`,
+в панели действий появляются **Next/Finish** и **Exit tutorial**.
+Выполнение шага (Connect, Refresh, выбор строки, Apply…) само двигает тур
+вперёд (`advanceTutorial(event)`); сценарии лежат в `Tutorial.java` без JavaFX,
+покрыты `TutorialTest`.
+
 | Шаг | Действие | Что происходит под капотом |
 |---|---|---|
 | 1 | `mvn clean javafx:run` | окно `1380 x 840`, `JKubeTermApp.start` (`JKubeTermApp.java:40`) |

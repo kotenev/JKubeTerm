@@ -91,7 +91,9 @@ classDiagram
 
 | Region | Controls | Behaviour |
 |---|---|---|
+| Menu bar | **Help** (User guide, Admin guide, QuickStart, About), **Tutorial** (Start guided tour, First deploy drill, Debug flow drill, Stop tutorial) | Help opens info dialogs with docs links; Tutorial starts/stops `Tutorial` wizard (hint strip + `tutorial-target` highlight + Next/Exit buttons in actions pane) |
 | Top toolbar | `ComboBox<KubeconfigLoader.ContextRef>` (w=265), **Connect**, **↻ Config**, `ComboBox<String>` namespaces (w=165), **Refresh** | Connect → `connect()`; ↻ Config → `loadContexts()`; namespace change → `refresh()` |
+| Tutorial hint | `Label.tutorial-hint` under toolbar (hidden unless touring) | `«Tutorial i/N — title + body»`; Next/Finish advances, Exit stops and clears highlight |
 | Left | `ListView<ResourceKind>` (w=180) | All 14 kinds; selection → `refresh()` |
 | Middle | filter `TextField` + `TableView<HasMetadata>` | Columns Name / Namespace / Kind / Created; filter applies locally (lowercase `contains`) via `showItems()`; constrained flex-last-column resize |
 | Right | Edit-mode checkbox, Apply YAML, Delete, Pod logs, Exec command, Port forward, Scale, Restart, Helm releases, Save YAML…, New YAML; manifest `TextArea`; console `TextArea` | FlowPane of actions; `editMode.selectedProperty` toggles manifest editability; row selection loads `service.yaml(item)` and resets edit mode |
@@ -106,6 +108,8 @@ classDiagram
 | `currentItems` | `List<HasMetadata>` (immutable copy) | Last listed rows, filtered locally by `showItems()` |
 | `portProcesses` | `CopyOnWriteArrayList<Process>` | Live port-forward processes, destroyed on exit |
 | `stage` | `Stage` | Used by the Save YAML `FileChooser` |
+| `tutorial` / `tutorialIndex` | `Tutorial` / `int` | Active wizard script + current step; `null`/`-1` when idle |
+| `tutorialHighlighted` | `List<Node>` | Nodes carrying `tutorial-target` class, cleared per step/exit |
 
 ### Key methods
 
@@ -122,6 +126,7 @@ classDiagram
 | `helm()` | FX → worker | `ExternalTools.helm(..., "list", "--all")`, namespace defaults to `default`, 30 s timeout |
 | `saveYaml()` / `newYaml` action | FX | File export (`.yaml`/`.yml`) / pre-filled ConfigMap template with edit mode on |
 | `task(ThrowingAction)` | FX → worker | Submits; any exception → `Platform.runLater(error dialog «Kubernetes operation failed»)` |
+| `startTutorial(Tutorial)` / `stopTutorial()` / `nextTutorialStep()` | FX | Wizard state (`tutorial`, `tutorialIndex`); hint label + `tutorial-target` CSS class on step nodes; Next/Exit buttons appended to actions pane; auto-advance via `advanceTutorial(event)` hooks in `connect`/`refresh`/selection/edit/apply/delete/logs/exec/forward/new-yaml |
 | `stop()` | FX | Destroy port-forward processes → `worker.shutdownNow()` → `service.close()` |
 
 ## 3. `KubernetesService` — Fabric8 facade

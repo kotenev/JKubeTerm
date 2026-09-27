@@ -5,3 +5,5 @@
 .text-area, .text-field, .combo-box, .table-view, .list-view { -fx-background-radius: 5; }
 .table-row-cell:selected, .list-cell:selected { -fx-background-color: #205b91; }
 .toolbar { -fx-background-color: #203044; }
+.tutorial-hint { -fx-text-fill: #ffe9a8; -fx-background-color: #3a2f14; -fx-padding: 8 10; -fx-font-size: 12.5px; }
+.tutorial-target { -fx-effect: dropshadow(gaussian, #ffd54a, 14, 0.35, 0, 0); -fx-border-color: #ffd54a; -fx-border-width: 2; -fx-border-radius: 5; }
