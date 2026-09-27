@@ -240,7 +240,7 @@ Dashboard в интернет без auth-прокси, см. [admin-guide](admi
 Вариант B — через ArgoCD (GitOps-путь, рекомендуется для лаборатории):
 
 ```yaml
-# noinspection YAMLSchemaValidation,KubernetesUnknownResource
+# noinspection KubernetesUnknownResourcesInspection
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
