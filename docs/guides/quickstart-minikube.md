@@ -242,6 +242,7 @@ Dashboard в интернет без auth-прокси, см. [admin-guide](admi
 ```yaml
 # noinspection KubernetesUnknownResourcesInspection
 apiVersion: argoproj.io/v1alpha1
+# noinspection KubernetesUnknownResourcesInspection
 kind: Application
 metadata:
   name: podinfo
