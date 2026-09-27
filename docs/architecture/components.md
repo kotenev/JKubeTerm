@@ -92,7 +92,7 @@ classDiagram
 | Region | Controls | Behaviour |
 |---|---|---|
 | Menu bar | **Help** (User guide, Admin guide, QuickStart, About), **Tutorial** (Start guided tour, First deploy drill, Debug flow drill, Stop tutorial) | Help opens info dialogs with docs links; Tutorial starts/stops `Tutorial` wizard (hint strip + `tutorial-target` highlight + Next/Exit buttons in actions pane) |
-| Top toolbar | `ComboBox<KubeconfigLoader.ContextRef>` (w=265), **Connect**, **↻ Config**, `ComboBox<String>` namespaces (w=165), **Refresh** | Connect → `connect()`; ↻ Config → `loadContexts()`; namespace change → `refresh()` |
+| Top toolbar | `ComboBox<KubeconfigLoader.ContextRef>` (w=265), **Connect**, **↻ Config**, `ComboBox<String>` namespaces (w=165), **Refresh**, **Diagnose** | Connect → `connect()` (failure prints `ConnectionDiagnostics.describe` to console); ↻ Config → `loadContexts()`; namespace change → `refresh()`; Diagnose → `diagnose()` (step-by-step `[OK]/[FAIL]` + FIX hints) |
 | Tutorial hint | `Label.tutorial-hint` under toolbar (hidden unless touring) | `«Tutorial i/N — title + body»`; Next/Finish advances, Exit stops and clears highlight |
 | Left | `ListView<ResourceKind>` (w=180) | All 14 kinds; selection → `refresh()` |
 | Middle | filter `TextField` + `TableView<HasMetadata>` | Columns Name / Namespace / Kind / Created; filter applies locally (lowercase `contains`) via `showItems()`; constrained flex-last-column resize |
@@ -128,6 +128,20 @@ classDiagram
 | `task(ThrowingAction)` | FX → worker | Submits; any exception → `Platform.runLater(error dialog «Kubernetes operation failed»)` |
 | `startTutorial(Tutorial)` / `stopTutorial()` / `nextTutorialStep()` | FX | Wizard state (`tutorial`, `tutorialIndex`); hint label + `tutorial-target` CSS class on step nodes; Next/Exit buttons appended to actions pane; auto-advance via `advanceTutorial(event)` hooks in `connect`/`refresh`/selection/edit/apply/delete/logs/exec/forward/new-yaml |
 | `stop()` | FX | Destroy port-forward processes → `worker.shutdownNow()` → `service.close()` |
+
+### Connection diagnostics
+
+`ConnectionDiagnostics` (`src/main/java/dev/jkubeterm/ConnectionDiagnostics.java:17`)
+is a pure-static helper with no JavaFX. `diagnose(context)` runs four ordered
+checks — kubeconfig file → kubeconfig parse (Fabric8 `Config`) → API endpoint
+(DNS + TCP to master host:port) → API auth (`getKubernetesVersion()` +
+`namespaces().list()`) — and renders `[OK]/[FAIL]` lines with `FIX:` hints.
+`describe(context, failure)` prefixes the same report with the Connect exception
+plus a classified cause hint (TLS / 401 / 403 / unreachable / DNS).
+`connect()` prints `describe(...)` to the console before rethrowing to the error
+dialog; `refresh()` on an empty result prints the scope (`ns=` vs cluster-scope)
+plus a kind-specific hint instead of staying silent. Covered by
+`ConnectionDiagnosticsTest` (missing file, unresolvable host, hint classifier).
 
 ## 3. `KubernetesService` — Fabric8 facade
 

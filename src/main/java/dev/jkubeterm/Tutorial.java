@@ -8,7 +8,7 @@ import java.util.List;
  * {@code JKubeTermApp.tutorialNode(String)}. Known ids:
  * contexts, connect, reload-contexts, namespaces, refresh, kinds, filter,
  * table, details, editMode, apply, remove, logs, shell, forward, scale,
- * restart, helm, save, newYaml, console, status.
+ * restart, helm, save, newYaml, diagnose, console, status.
  */
 public record Tutorial(String name, String doneText, List<Step> steps) {
     public record Step(String title, String body, List<String> targetIds, List<String> advanceOn) {
@@ -25,8 +25,8 @@ public record Tutorial(String name, String doneText, List<Step> steps) {
                     "Pick a kubeconfig context in the Context combo, then press Connect. Status must show Connected.",
                     List.of("contexts", "connect"), List.of("connect")),
                 new Step("2 — Namespace and Refresh",
-                    "Pick a namespace, then press Refresh. The table loads on a worker thread.",
-                    List.of("namespaces", "refresh"), List.of("refresh")),
+                    "Pick a namespace, then press Refresh. The table loads on a worker thread. Empty result is a valid answer — the console explains why. Press Diagnose for a step-by-step connection report.",
+                    List.of("namespaces", "refresh", "diagnose"), List.of("refresh")),
                 new Step("3 — Browse",
                     "Pick a kind on the left, type into the filter (local, no API calls), then click a table row to load its YAML.",
                     List.of("kinds", "filter", "table"), List.of("select-row")),

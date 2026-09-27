@@ -51,6 +51,7 @@ public final class JKubeTermApp extends Application {
     private Button helmButton;
     private Button saveButton;
     private Button newYamlButton;
+    private Button diagnoseButton;
     private FlowPane actionsPane;
     private Label tutorialHint;
 
@@ -60,7 +61,8 @@ public final class JKubeTermApp extends Application {
         connectButton = new Button("Connect"); connectButton.setOnAction(e -> connect());
         reloadContextsButton = new Button("↻ Config"); reloadContextsButton.setOnAction(e -> loadContexts());
         refreshButton = new Button("Refresh"); refreshButton.setOnAction(e -> refresh());
-        HBox top = new HBox(8, new Label("Context"), contexts, connectButton, reloadContextsButton, new Label("Namespace"), namespaces, refreshButton);
+        diagnoseButton = new Button("Diagnose"); diagnoseButton.setOnAction(e -> diagnose());
+        HBox top = new HBox(8, new Label("Context"), contexts, connectButton, reloadContextsButton, new Label("Namespace"), namespaces, refreshButton, diagnoseButton);
         top.setPadding(new Insets(10)); top.getStyleClass().add("toolbar");
         kinds.setItems(FXCollections.observableArrayList(ResourceKind.values())); kinds.setPrefWidth(180);
         kinds.getSelectionModel().selectedItemProperty().addListener((obs, old, kind) -> refresh());
@@ -142,6 +144,7 @@ public final class JKubeTermApp extends Application {
     private void connect() {
         var selected = contexts.getValue(); if (selected == null) { info("Select a kubeconfig context first."); return; }
         status.setText("Connecting to " + selected.name() + "…");
+        output("Connecting to context '" + selected.name() + "' [" + selected.file() + "]…\n");
         task(() -> {
             KubernetesService next = new KubernetesService(selected);
             try {
@@ -153,20 +156,51 @@ public final class JKubeTermApp extends Application {
                     namespaces.setItems(FXCollections.observableArrayList(ns));
                     namespaces.getSelectionModel().select(ns.contains("default") ? "default" : ns.isEmpty() ? null : ns.getFirst());
                     status.setText("Connected: " + selected.name() + " | Kubernetes " + version);
+                    output("Connected: " + selected.name() + " | Kubernetes " + version + " | namespaces: " + ns.size() + ".\n");
                     refresh();
                     advanceTutorial("connect");
                 });
-            } catch (Exception e) { next.close(); throw e; }
+            } catch (Exception e) {
+                String report = ConnectionDiagnostics.describe(selected, e);
+                Platform.runLater(() -> output(report));
+                next.close();
+                throw e;
+            }
+        });
+    }
+    private void diagnose() {
+        var selected = contexts.getValue(); if (selected == null) { info("Select a kubeconfig context first."); return; }
+        status.setText("Diagnosing " + selected.name() + "…");
+        output("Diagnosing context '" + selected.name() + "' [" + selected.file() + "]…\n");
+        task(() -> {
+            String report = ConnectionDiagnostics.diagnose(selected);
+            Platform.runLater(() -> { output(report); status.setText("Diagnosis of " + selected.name() + " done."); });
         });
     }
     private void refresh() {
-        if (service == null || kinds.getSelectionModel().getSelectedItem() == null) return;
+        if (kinds.getSelectionModel().getSelectedItem() == null) { status.setText("Pick a kind on the left first."); return; }
+        if (service == null) { status.setText("Not connected — press Connect first."); output("Not connected. Pick a context and press Connect (or Diagnose for details).\n"); return; }
         ResourceKind kind = kinds.getSelectionModel().getSelectedItem(); String ns = namespaces.getValue();
         status.setText("Loading " + kind.label + "…");
         task(() -> {
             List<HasMetadata> result = List.copyOf(service.list(kind, ns));
-            Platform.runLater(() -> { currentItems = result; showItems(); status.setText(result.size() + " " + kind.label + " | " + service.context().name()); advanceTutorial("refresh"); });
+            Platform.runLater(() -> {
+                currentItems = result;
+                showItems();
+                String where = kind.namespaced ? "ns=" + service.namespaceOrDefault(ns) : "cluster-scope";
+                status.setText(result.size() + " " + kind.label + " | " + service.context().name());
+                if (result.isEmpty())
+                    output("Connected to '" + service.context().name() + "'. " + kind.label + " is empty (" + where + "). " + emptyHint(kind) + "\n");
+                advanceTutorial("refresh");
+            });
         });
+    }
+    private String emptyHint(ResourceKind kind) {
+        return switch (kind) {
+            case PODS -> "Try Namespace kube-system (system pods live there) or create a workload — empty default is normal on a fresh minikube.";
+            case NODES, NAMESPACES -> "Empty here means a permissions or API problem — press Diagnose.";
+            default -> "Empty is a valid answer — it means the API call succeeded with zero items. Press Diagnose if you expected rows.";
+        };
     }
     private void showItems() {
         String query = filter.getText().strip().toLowerCase(java.util.Locale.ROOT);
@@ -409,6 +443,7 @@ public final class JKubeTermApp extends Application {
             case "helm" -> helmButton;
             case "save" -> saveButton;
             case "newYaml" -> newYamlButton;
+            case "diagnose" -> diagnoseButton;
             case "console" -> console;
             case "status" -> status;
             default -> null;
