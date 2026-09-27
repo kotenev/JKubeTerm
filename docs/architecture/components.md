@@ -123,7 +123,7 @@ classDiagram
 | `logs()` | FX → worker → FX (×2) | Fetch containers on worker, show `ChoiceDialog`, then fetch `logs(ns, pod, container, 500)` |
 | `exec()` | FX → worker | `ExternalTools.kubectl(..., "exec", pod, "--", command.strip())` then `ExternalTools.run(argv, 30)` |
 | `portForward()` | FX (+worker reader) | Validates `local:remote` (regex + 1–65535), starts `kubectl port-forward --address 127.0.0.1 kind/name ports` via `ProcessBuilder`, tracks process, drains output on worker |
-| `helm()` | FX → worker | `ExternalTools.helm(..., "list", "--all")`, namespace defaults to `default`, 30 s timeout |
+| `helm()` | FX → worker | `ExternalTools.helm(..., "list")`, namespace defaults to `default`, 30 s timeout |
 | `saveYaml()` / `newYaml` action | FX | File export (`.yaml`/`.yml`) / pre-filled ConfigMap template with edit mode on |
 | `task(ThrowingAction)` | FX → worker | Submits; any exception → `Platform.runLater(error dialog «Kubernetes operation failed»)` |
 | `startTutorial(Tutorial)` / `stopTutorial()` / `nextTutorialStep()` | FX | Wizard state (`tutorial`, `tutorialIndex`); hint label + `tutorial-target` CSS class on step nodes; Next/Exit buttons appended to actions pane; auto-advance via `advanceTutorial(event)` hooks in `connect`/`refresh`/selection/edit/apply/delete/logs/exec/forward/new-yaml |

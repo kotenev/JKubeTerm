@@ -21,7 +21,7 @@ deliberately narrow and security-first.
 |---|---|
 | Exec | `kubectl --context <name> --kubeconfig <file> --namespace <ns> exec <pod> -- <executable>` |
 | Port forward | `kubectl --context <name> --kubeconfig <file> --namespace <ns> port-forward --address 127.0.0.1 <kind>/<pod-or-svc-name> <local>:<remote>` |
-| Helm list | `helm --kube-context <name> --kubeconfig <file> --namespace <ns> list --all` |
+| Helm list | `helm --kube-context <name> --kubeconfig <file> --namespace <ns> list` |
 
 Both `kubectl()` and `helm()` are pure functions returning the argv list —
 they never start processes themselves (`ExternalTools.java:22`,
@@ -95,9 +95,13 @@ w -> fx : error dialog on failure
 
 ### helm list (30 s)
 
-Same path as exec with argv `helm --kube-context … --kubeconfig … --namespace … list --all`;
+Same path as exec with argv `helm --kube-context … --kubeconfig … --namespace … list`;
 the namespace falls back to `default` when the combo is empty
 (`JKubeTermApp.java:222`).
+
+> Helm 3 accepted `list --all` (all statuses in the namespace); Helm 4 removed
+> the flag — all statuses are listed by default, `-A/--all-namespaces` now means
+> across namespaces. JKubeTerm passes plain `list` and stays compatible with both.
 
 ## 5. Failure surface
 
@@ -115,7 +119,7 @@ the namespace falls back to `default` when the combo is empty
 |---|---|
 | One-shot exec (single executable) | Interactive exec WebSocket/TTY (roadmap 2) |
 | kubectl port-forward, loopback-only, no stop UI | Port-forward manager with stop/reconnect (roadmap 3) |
-| `helm list --all` only | Helm install/upgrade/rollback (roadmap 5) |
+| `helm list` only | Helm install/upgrade/rollback (roadmap 5) |
 
 `kubectl` and `helm` must be on `PATH`; JKubeTerm does not bundle or download
 them.

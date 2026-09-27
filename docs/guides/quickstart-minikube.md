@@ -21,7 +21,7 @@
 
 Как JKubeTerm вписывается: установка выполняется в терминале (`kubectl`/`helm`),
 а проверка, просмотр YAML, логи, exec, port-forward и `helm list` — в JKubeTerm.
-JKubeTerm не ставит чарты (`helm list --all` только, `JKubeTermApp.java:220`) —
+JKubeTerm не ставит чарты (`helm list` только, `JKubeTermApp.java:220`) —
 это осознанное ограничение, см. [external-tools](../architecture/external-tools.md).
 
 ```mermaid
@@ -306,7 +306,7 @@ minikube delete             # ПОЛНОЕ удаление лаборатори
 |---|---|
 | Упавший Pod | **Pods** → фильтр → **Pod logs** (выбор контейнера) → **Events** в том же namespace |
 | Нужна shell-команда | **Exec command** — один executable (`/bin/sh`), без shell-парсинга, 30 с таймаут |
-| Список релизов Helm | **Helm releases** — `helm list --all` в выбранном namespace (установки/откаты — только CLI) |
+| Список релизов Helm | **Helm releases** — `helm list` в выбранном namespace (установки/откаты — только CLI) |
 | Правка манифеста | строка → YAML справа → **Edit YAML** → **Apply YAML** (server-side apply) |
 | Экспорт | **Save YAML…** в `resource.yaml` (локально, осторожно с секретами) |
 

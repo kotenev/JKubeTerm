@@ -553,7 +553,7 @@ state Connected {
   ScaleDialog --> ConfirmDialog : n >= 0\nconfirm scale to n
   ScaleDialog --> Browsing : Cancel
   ScaleDialog --> InfoDialog : negative or non-integer
-  Browsing --> HelmRunning : Helm releases\nhelm list --all 30s
+  Browsing --> HelmRunning : Helm releases\nhelm list 30s
   HelmRunning --> Browsing : console = release table
   Browsing --> SaveDialog : Save YAML\nFileChooser resource.yaml
   SaveDialog --> Browsing : saved or Cancel\nlocal only, no worker

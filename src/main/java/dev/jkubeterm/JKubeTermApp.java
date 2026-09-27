@@ -326,7 +326,8 @@ public final class JKubeTermApp extends Application {
     }
     private void helm() {
         if (service == null) return;
-        var args = ExternalTools.helm(service.context(), namespaces.getValue() == null ? "default" : namespaces.getValue(), "list", "--all");
+        // Helm 4 removed `list --all` (all statuses are listed by default, -A = all namespaces).
+        var args = ExternalTools.helm(service.context(), namespaces.getValue() == null ? "default" : namespaces.getValue(), "list");
         task(() -> { String result = ExternalTools.run(service.context(), args, 30); Platform.runLater(() -> output(result)); });
     }
     private void saveYaml() {
@@ -421,7 +422,7 @@ public final class JKubeTermApp extends Application {
             Pod logs: Pod only — pick a container, last 500 lines (no streaming).
             Exec: Pod only — single executable, no shell parsing, 30 s timeout.
             Port forward: Pod/Service, local:remote (127.0.0.1 only), stops when the app exits.
-            Scale/Restart: Deployments only. Helm releases: listing only (helm list --all).
+            Scale/Restart: Deployments only. Helm releases: listing only (helm list).
             Docs: http://127.0.0.1:8000/guides/ (QuickStart, user guide, admin guide + PDFs).""";
     }
     private String adminGuideText() {

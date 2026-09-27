@@ -20,7 +20,7 @@ C4Context
   Rel(jkubeterm, kubeconfig, "Reads contexts / builds client config", "Local file I/O")
   Rel(jkubeterm, k8s, "Lists, inspects, applies, deletes resources; reads logs", "HTTPS :443 (Fabric8)")
   Rel(jkubeterm, kubectl, "Exec / port-forward via argv + KUBECONFIG env", "Subprocess")
-  Rel(jkubeterm, helm, "helm list --all via argv", "Subprocess")
+  Rel(jkubeterm, helm, "helm list via argv", "Subprocess")
   Rel(kubectl, k8s, "Talks to API server", "HTTPS")
   Rel(helm, k8s, "Talks to API server", "HTTPS")
 ```

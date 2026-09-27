@@ -40,7 +40,7 @@ public record Tutorial(String name, String doneText, List<Step> steps) {
                     "Select a Pod row first. Pod logs asks for a container (last 500 lines). Exec runs one executable (30 s). Port forward binds 127.0.0.1 and lives until exit.",
                     List.of("logs", "shell", "forward"), List.of("logs")),
                 new Step("7 — Deployments and Helm",
-                    "Scale and Restart need a Deployment row. Helm releases only lists (helm list --all) in the current namespace. Output lands in the console below.",
+                    "Scale and Restart need a Deployment row. Helm releases only lists (helm list) in the current namespace. Output lands in the console below.",
                     List.of("scale", "restart", "helm", "console"))));
     }
 

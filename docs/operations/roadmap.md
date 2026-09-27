@@ -9,7 +9,7 @@ page to plan changes without breaking the documented model.
 | 2 | Native interactive Exec WebSocket terminal & log stream | One-shot `kubectl exec` via `ExternalTools` (ADR-0004) | Fabric8 `pod().inContainer().exec()` / `watchLog()`; new UI terminal component; retire the subprocess exec path |
 | 3 | Port-forward manager (stop/reconnect) | kubectl subprocess tracked in `portProcesses` (ADR-0007) | Fabric8 port-forward with per-forward handles and a manager UI |
 | 4 | API discovery, CRD browser, Metrics/Prometheus | Hardcoded `ResourceKind` + `isClusterScoped` list (ADR-0008) | Dynamic kinds from discovery; extend the resource catalog page and C4/ArchiMate models |
-| 5 | Helm lifecycle, GitOps, file browser | `helm list --all` only | Extend `ExternalTools` or move to Helm SDK; new container in the container view |
+| 5 | Helm lifecycle, GitOps, file browser | `helm list` only | Extend `ExternalTools` or move to Helm SDK; new container in the container view |
 | 6 | Optional AI assistant (read-only default, explicit write approval) | — | New component beside Kubernetes Service; reuse the worker executor; approval flow reuses the confirmation-dialog pattern |
 
 ## Model maintenance rules

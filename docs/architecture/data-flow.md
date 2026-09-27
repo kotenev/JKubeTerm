@@ -261,7 +261,7 @@ sequenceDiagram
   participant W as Worker
   participant ET as ExternalTools
   participant H as helm child process
-  FX->>ET: helm(ctx, ns|default, "list", "--all") → argv
+  FX->>ET: helm(ctx, ns|default, "list") → argv
   FX->>W: task(run argv, 30 s)
   W->>ET: run(context, argv, 30)
   ET->>H: ProcessBuilder(argv), env KUBECONFIG = kubeconfig file

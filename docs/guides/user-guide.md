@@ -111,7 +111,7 @@ Prometheus `9090:9090`, см. раздел Access map в [quickstart-minikube](q
 
 ## Helm releases
 
-Кнопка собирает `helm --kube-context … --kubeconfig … --namespace <ns|default> list --all`
+Кнопка собирает `helm --kube-context … --kubeconfig … --namespace <ns|default> list`
 и выполняет через `ExternalTools.run(…, 30)`; вывод — в консоль. Это **только листинг**:
 install/upgrade/rollback делайте в терминале — `helm` обязан быть на `PATH`.
 

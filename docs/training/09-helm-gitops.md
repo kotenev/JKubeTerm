@@ -4,7 +4,7 @@
 
 Два уровня автоматизации: Helm шаблонизирует манифесты (пакетный менеджер),
 ArgoCD держит кластер в соответствии с Git (desired state). JKubeTerm в этой
-схеме — наблюдатель: `helm list --all` только, установок нет (осознанно).
+схеме — наблюдатель: `helm list` только, установок нет (осознанно).
 
 ## Helm: anatomия чарта
 
@@ -39,13 +39,13 @@ prometheus:
 helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
   --version 91.0.0 --namespace monitoring --create-namespace \
   -f values-monitoring.yaml
-helm -n monitoring list --all
+helm -n monitoring list
 helm -n monitoring get values monitoring > values-monitoring.backup.yaml
 helm -n monitoring rollback monitoring 2   # откат на ревизию 2
 ```
 
 Проверка в JKubeTerm: кнопка **Helm releases** выполняет ровно
-`helm --kube-context … --namespace <ns> list --all` в выбранном namespace
+`helm --kube-context … --namespace <ns> list` в выбранном namespace
 (`JKubeTermApp.java:220`). Релиз не виден? Проверьте комбо namespace —
 дефолт `default`, а релизы живут в своих (`monitoring`, `headlamp`).
 
