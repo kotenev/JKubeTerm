@@ -417,7 +417,7 @@ public final class JKubeTermApp extends Application {
     }
     private String aboutText() {
         return """
-            JKubeTerm 0.1 — JavaFX 21 desktop Kubernetes client (Fabric8 7.3.1).
+            JKubeTerm 0.1 — JavaFX 21 desktop Kubernetes client (Fabric8 7.9.0).
             Blocking I/O on worker jkubeterm-kubernetes-io, UI updates via Platform.runLater.
             Docs: http://127.0.0.1:8000/ — architecture, diagrams, guides.""";
     }

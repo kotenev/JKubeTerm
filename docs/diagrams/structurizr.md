@@ -8,7 +8,7 @@ structurizr.com workspaces).
 ## 1. Workspace
 
 ```dsl
-workspace "JKubeTerm" "Architecture of the JKubeTerm JavaFX desktop Kubernetes client (Linux/macOS, Java 21, Fabric8 7.3.1)." {
+workspace "JKubeTerm" "Architecture of the JKubeTerm JavaFX desktop Kubernetes client (Linux/macOS, Java 21, Fabric8 7.9.0)." {
 
   model {
     user = person "Kubernetes Developer" "Uses JKubeTerm to view and manage Kubernetes resources from a desktop."
@@ -19,7 +19,7 @@ workspace "JKubeTerm" "Architecture of the JKubeTerm JavaFX desktop Kubernetes c
 
       worker = container "Worker Executor" "Single daemon-thread executor (jkubeterm-kubernetes-io); runs every blocking task; results returned via Platform.runLater." "java.util.concurrent"
 
-      service = container "Kubernetes Service" "AutoCloseable wrapper over the Fabric8 client: list 14 kinds, YAML codec, logs (tail 500), server-side apply, delete, scale, restart, namespaces, version." "Java 21, Fabric8 7.3.1"
+      service = container "Kubernetes Service" "AutoCloseable wrapper over the Fabric8 client: list 14 kinds, YAML codec, logs (tail 500), server-side apply, delete, scale, restart, namespaces, version." "Java 21, Fabric8 7.9.0"
 
       loader = container "Kubeconfig Loader" "Resolves $KUBECONFIG (or ~/.kube/config), extracts context names with SnakeYAML, builds Fabric8 Config with TLS and client certificates." "Java 21, SnakeYAML 2.3"
 

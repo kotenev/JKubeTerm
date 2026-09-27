@@ -34,7 +34,7 @@ C4Container
   System_Boundary(jkt, "JKubeTerm (single JVM, Java 21)") {
     Container(ui, "UI Shell", "JavaFX 21 — JKubeTermApp", "Toolbar, kind list, resource table + filter, YAML editor, dialogs, console, status bar.")
     Container(worker, "Worker Executor", "java.util.concurrent", "Single daemon thread 'jkubeterm-kubernetes-io'; every blocking task; results via Platform.runLater.")
-    Container(svc, "Kubernetes Service", "Java 21, Fabric8 7.3.1 — KubernetesService", "list 14 kinds, YAML codec, logs, apply (SSA), delete, scale, restart, namespaces, version.")
+    Container(svc, "Kubernetes Service", "Java 21, Fabric8 7.9.0 — KubernetesService", "list 14 kinds, YAML codec, logs, apply (SSA), delete, scale, restart, namespaces, version.")
     Container(loader, "Kubeconfig Loader", "Java 21, SnakeYAML 2.3 — KubeconfigLoader", "path resolution ($KUBECONFIG | ~/.kube/config), context-name discovery, Config.fromKubeconfig.")
     Container(bridge, "External Tools Bridge", "Java 21, ProcessBuilder — ExternalTools", "argv-only kubectl/helm runs, KUBECONFIG injection, 30 s timeouts.")
   }

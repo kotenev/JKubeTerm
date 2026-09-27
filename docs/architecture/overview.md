@@ -68,7 +68,7 @@ in the [diagrams section](../diagrams/index.md).
 | Dependency | Version | Used for |
 |---|---|---|
 | `org.openjfx:javafx-controls` | 21.0.6 | UI controls, layout, dialogs, threading (`Platform.runLater`) |
-| `io.fabric8:kubernetes-client` | 7.3.1 | All Kubernetes API access, kubeconfig → `Config`, YAML `Serialization` |
+| `io.fabric8:kubernetes-client` | 7.9.0 | All Kubernetes API access, kubeconfig → `Config`, YAML `Serialization` |
 | `org.yaml:snakeyaml` | 2.3 | Lightweight parsing of kubeconfig documents for context discovery |
 | `org.junit.jupiter:junit-jupiter` | 5.11.4 (test) | Unit tests |
 
@@ -103,7 +103,7 @@ C4Container
   System_Boundary(jkt, "JKubeTerm (single JVM)") {
     Container(ui, "UI Shell", "JavaFX 21 — JKubeTermApp", "Context/namespace/kind selection, resource table, filter, YAML editor, dialogs, output console, status bar.")
     Container(worker, "Worker Executor", "java.util.concurrent", "Single daemon thread 'jkubeterm-kubernetes-io'; runs every blocking task and reports back via Platform.runLater.")
-    Container(svc, "Kubernetes Service", "Java 21, Fabric8 7.3.1 — KubernetesService", "List/inspect/apply/delete/scale/restart/logs/namespaces/version over Fabric8 KubernetesClient.")
+    Container(svc, "Kubernetes Service", "Java 21, Fabric8 7.9.0 — KubernetesService", "List/inspect/apply/delete/scale/restart/logs/namespaces/version over Fabric8 KubernetesClient.")
     Container(loader, "Kubeconfig Loader", "Java 21, SnakeYAML 2.3 — KubeconfigLoader", "Resolves kubeconfig paths, extracts context names, builds Fabric8 Config (TLS + client certs).")
     Container(bridge, "External Tools Bridge", "Java 21, ProcessBuilder — ExternalTools", "argv-only kubectl/helm execution with KUBECONFIG injection and 30 s timeouts.")
   }

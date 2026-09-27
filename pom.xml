@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.jkubeterm</groupId><artifactId>jkubeterm</artifactId><version>0.1.0</version>
   <name>JKubeTerm</name><description>Cross-platform JavaFX Kubernetes desktop client</description>
-  <properties><maven.compiler.release>21</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><javafx.version>21.0.6</javafx.version><fabric8.version>7.3.1</fabric8.version><junit.version>5.11.4</junit.version><slf4j.version>2.0.17</slf4j.version></properties>
+  <properties><maven.compiler.release>21</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><javafx.version>21.0.6</javafx.version><fabric8.version>7.9.0</fabric8.version><junit.version>5.11.4</junit.version><slf4j.version>2.0.17</slf4j.version></properties>
   <dependencies>
     <dependency><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId><version>${javafx.version}</version></dependency>
     <dependency><groupId>io.fabric8</groupId><artifactId>kubernetes-client</artifactId><version>${fabric8.version}</version></dependency>

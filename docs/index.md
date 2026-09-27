@@ -48,7 +48,7 @@ flowchart LR
 |---|---|
 | Language / runtime | Java 21 (`maven.compiler.release=21`) |
 | UI toolkit | JavaFX / OpenJFX `javafx-controls` 21.0.6 |
-| Kubernetes client | `io.fabric8:kubernetes-client` 7.3.1 |
+| Kubernetes client | `io.fabric8:kubernetes-client` 7.9.0 |
 | YAML parsing | SnakeYAML 2.3 (context discovery), Fabric8 `Serialization` (resource YAML) |
 | Tests | JUnit Jupiter 5.11.4 |
 | Build | Apache Maven 3.9+, `javafx-maven-plugin` 0.0.8, `jpackage` for native images |

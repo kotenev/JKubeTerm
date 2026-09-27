@@ -24,7 +24,7 @@ later ADR). ADRs are numbered in the order the decisions became binding.
 - **Status:** Accepted
 - **Context:** Hand-rolling REST/HTTPS against the API server would duplicate
   auth (exec plugins, tokens, client certs), model classes and TLS handling.
-- **Decision:** Use `io.fabric8:kubernetes-client` 7.3.1 for all cluster
+- **Decision:** Use `io.fabric8:kubernetes-client` 7.9.0 for all cluster
   access: typed DSL in `KubernetesService.list`, `Config.fromKubeconfig` for
   auth/TLS, `Serialization` for YAML. SnakeYAML is used only for lightweight
   context-name discovery.

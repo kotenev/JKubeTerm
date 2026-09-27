@@ -44,7 +44,7 @@ actor "Kubernetes Developer" as user
 package "JKubeTerm — single JVM (Java 21)" {
   component "UI Shell — JKubeTermApp\n(JavaFX 21)" as ui
   component "Worker Executor\nnewSingleThreadExecutor\ndaemon: jkubeterm-kubernetes-io" as worker
-  component "Kubernetes Service — KubernetesService\nFabric8 7.3.1 (AutoCloseable)" as service
+  component "Kubernetes Service — KubernetesService\nFabric8 7.9.0 (AutoCloseable)" as service
   component "Kubeconfig Loader — KubeconfigLoader\nSnakeYAML 2.3 + Fabric8 Config" as loader
   component "External Tools Bridge — ExternalTools\nProcessBuilder, argv-only" as bridge
 }
@@ -366,7 +366,7 @@ node "User workstation (Linux/macOS)" as ws {
   node "JDK 21 runtime" as jre {
     artifact "jkubeterm-0.1.0.jar\n(main-class dev.jkubeterm.JKubeTermApp)" as jar
     artifact "JavaFX 21.0.6 modules\n(javafx-controls)" as fx
-    artifact "kubernetes-client 7.3.1\nsnakeyaml 2.3" as libs
+    artifact "kubernetes-client 7.9.0\nsnakeyaml 2.3" as libs
   }
   folder "kubeconfig file(s)\n~/.kube/config and/or $KUBECONFIG" as kc
   component "kubectl\n(PATH)" as kctl
