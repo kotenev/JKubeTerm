@@ -30,7 +30,47 @@
   }
 
   function zoomBy(box, delta) {
+    if (box._jkFitH) {
+      var base = box._jkPrevScale == null ? 1 : box._jkPrevScale;
+      setFitH(box, false);
+      setScale(box, base + delta);
+      return;
+    }
     setScale(box, (box._jkScale == null ? 1 : box._jkScale) + delta);
+  }
+
+  function applyUserScale(box, s) {
+    if (box._jkFitH) setFitH(box, false);
+    setScale(box, s);
+  }
+
+  function isFitH(box) {
+    return !!box._jkFitH;
+  }
+
+  function setFitH(box, on) {
+    on = !!on;
+    if (!!box._jkFitH === on) return;
+    if (on) {
+      box._jkPrevScale = box._jkScale == null ? 1 : box._jkScale;
+      box._jkFitH = true;
+      try {
+        if (box.classList && box.classList.add) box.classList.add("jk-zoom-fit-h");
+      } catch (e) { /* ignore */ }
+      if (box._jkCanvas) box._jkCanvas.style.transform = "";
+      if (box._jkLevel) box._jkLevel.textContent = "Fit H";
+    } else {
+      box._jkFitH = false;
+      try {
+        if (box.classList && box.classList.remove) box.classList.remove("jk-zoom-fit-h");
+      } catch (e) { /* ignore */ }
+      setScale(box, box._jkPrevScale == null ? 1 : box._jkPrevScale);
+    }
+    if (box._jkFitBtn) box._jkFitBtn.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+
+  function toggleFitH(box) {
+    setFitH(box, !isFitH(box));
   }
 
   function fullscreenActive(box) {
@@ -138,20 +178,24 @@
     var viewport = document.createElement("div");
     viewport.className = "jk-zoom-viewport";
     viewport.tabIndex = 0;
-    viewport.setAttribute("aria-label", kindLabel + " viewport. Plus and minus keys zoom, zero resets, control with mouse wheel zooms.");
+    viewport.setAttribute("aria-label", kindLabel + " viewport. Plus and minus keys zoom, zero resets, H fits height, control with mouse wheel zooms.");
     var canvas = document.createElement("div");
     canvas.className = "jk-zoom-canvas";
     viewport.appendChild(canvas);
     bar.appendChild(makeButton("\u2212", "Zoom out", function () { zoomBy(box, -STEP); }));
     bar.appendChild(level);
     bar.appendChild(makeButton("+", "Zoom in", function () { zoomBy(box, STEP); }));
-    bar.appendChild(makeButton("100%", "Reset zoom to 100%", function () { setScale(box, 1); }));
+    bar.appendChild(makeButton("100%", "Reset zoom to 100%", function () { applyUserScale(box, 1); }));
+    var fitBtn = makeButton("\u2195", "Fit height — toggle back to previous scale (H)", function () { toggleFitH(box); });
+    fitBtn.setAttribute("aria-pressed", "false");
+    bar.appendChild(fitBtn);
+    box._jkFitBtn = fitBtn;
     var fsBtn = makeButton("\u26F6", "Open fullscreen (F)", function () { toggleFullscreen(box); });
     bar.appendChild(fsBtn);
     box._jkFsBtn = fsBtn;
     var hint = document.createElement("span");
     hint.className = "jk-zoom-hint";
-    hint.textContent = "Ctrl+scroll zooms · F fullscreen";
+    hint.textContent = "Ctrl+scroll zooms · F fullscreen · H fit height";
     bar.appendChild(hint);
     var returnBtn = makeButton("\u2190 Back to diagrams", "Exit fullscreen and return to the diagram in the page", function () { exitFullscreen(box); });
     returnBtn.className = "jk-zoom-return";
@@ -166,7 +210,8 @@
       var key = event.key || "";
       if (key === "+" || key === "=") { event.preventDefault(); zoomBy(box, STEP); }
       else if (key === "-" || key === "_") { event.preventDefault(); zoomBy(box, -STEP); }
-      else if (key === "0") { event.preventDefault(); setScale(box, 1); }
+      else if (key === "0") { event.preventDefault(); applyUserScale(box, 1); }
+      else if (key === "h" || key === "H" || key === "\u0440" || key === "\u0420") { event.preventDefault(); toggleFitH(box); }
       else if (key === "f" || key === "F" || key === "\u0430" || key === "\u0410") { event.preventDefault(); toggleFullscreen(box); }
       else if (key === "Escape" && fullscreenActive(box)) { event.preventDefault(); exitFullscreen(box); }
     });
