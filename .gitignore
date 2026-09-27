@@ -1,0 +1,5 @@
+# Build output
+target/
+
+# MkDocs build output
+site/
