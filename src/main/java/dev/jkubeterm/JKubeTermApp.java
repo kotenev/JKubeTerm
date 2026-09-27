@@ -77,7 +77,14 @@ public final class JKubeTermApp extends Application {
         details.setPrefRowCount(16); console.setPrefRowCount(9);
         VBox middle = new VBox(8, filter, table); VBox.setVgrow(table, Priority.ALWAYS);
         SplitPane content = new SplitPane(kinds, middle, right); content.setDividerPositions(.15, .55);
-        BorderPane root = new BorderPane(content, top, null, new HBox(8, new Label("JKubeTerm 0.1"), status), null);
+        Menu helpMenu = new Menu("Help");
+        MenuItem userGuide = new MenuItem("User guide"); userGuide.setOnAction(e -> help("User guide", userGuideText()));
+        MenuItem adminGuide = new MenuItem("Admin guide"); adminGuide.setOnAction(e -> help("Admin guide", adminGuideText()));
+        MenuItem quickstart = new MenuItem("QuickStart — minikube home lab"); quickstart.setOnAction(e -> help("QuickStart", quickstartText()));
+        MenuItem about = new MenuItem("About JKubeTerm"); about.setOnAction(e -> help("About JKubeTerm", aboutText()));
+        helpMenu.getItems().addAll(userGuide, adminGuide, quickstart, new SeparatorMenuItem(), about);
+        MenuBar menuBar = new MenuBar(helpMenu); menuBar.setUseSystemMenuBar(true);
+        BorderPane root = new BorderPane(content, new VBox(menuBar, top), null, new HBox(8, new Label("JKubeTerm 0.1"), status), null);
         root.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/jkubeterm.css")).toExternalForm());
         Scene scene = new Scene(root, 1380, 840);
         primaryStage.setTitle("JKubeTerm — Kubernetes Desktop"); primaryStage.setScene(scene); primaryStage.show();
@@ -230,6 +237,46 @@ public final class JKubeTermApp extends Application {
         if (file != null) try { Files.writeString(file.toPath(), details.getText()); } catch (Exception ex) { error("Save failed", ex); }
     }
     private void output(String message) { console.setText(message); }
+    private void help(String title, String body) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, body, ButtonType.OK);
+        alert.setTitle(title); alert.setHeaderText(title);
+        alert.getDialogPane().setMinWidth(560);
+        alert.show();
+    }
+    private String userGuideText() {
+        return "Connect: pick a kubeconfig context, press Connect, then Refresh.\n"
+            + "Browse: Kinds list + Namespace combo + name filter (local, case-insensitive).\n"
+            + "Manifest: select a row to view YAML, tick Edit YAML to change it, Apply YAML to server-side apply.\n"
+            + "Pod logs: Pod only — pick a container, last 500 lines (no streaming).\n"
+            + "Exec: Pod only — single executable, no shell parsing, 30 s timeout.\n"
+            + "Port forward: Pod/Service, local:remote (127.0.0.1 only), stops when the app exits.\n"
+            + "Scale/Restart: Deployments only. Helm releases: listing only (helm list --all).\n"
+            + "Docs: http://127.0.0.1:8000/guides/ (QuickStart, user guide, admin guide + PDFs).";
+    }
+    private String adminGuideText() {
+        return "JKubeTerm uses your kubeconfig RBAC — no privilege escalation.\n"
+            + "Cluster views (Nodes, Namespaces, PersistentVolumes) need cluster-scope read.\n"
+            + "kubectl and helm must be on PATH for Exec / port-forward / Helm releases.\n"
+            + "Port forwards bind 127.0.0.1 only and die with the app (stop() destroys processes).\n"
+            + "Apply YAML is server-side apply; unknown cluster-scoped kinds fail server-side (no API discovery).\n"
+            + "Secrets shown in YAML stay local — Save YAML writes them to disk, never commit them.\n"
+            + "Admin runbook: http://127.0.0.1:8000/guides/admin-guide/ (RBAC, GitOps, TLS, backups, upgrades).";
+    }
+    private String quickstartText() {
+        return "Home lab: minikube start --driver=docker --cpus=4 --memory=8192 --disk-size=40g\n"
+            + "1. Connect JKubeTerm to the minikube context, Namespace default, Pods + Refresh.\n"
+            + "2. minikube addons enable ingress metrics-server storage-provisioner.\n"
+            + "3. helm install: cert-manager, ingress-nginx, argocd (v3.4.8 manifest),\n"
+            + "   kube-prometheus-stack 91.x (monitoring), headlamp.\n"
+            + "4. ArgoCD admin password: kubectl -n argocd get secret argocd-initial-admin-secret.\n"
+            + "5. UIs via JKubeTerm Port forward (127.0.0.1): ArgoCD 8080:80, Grafana 3000:80.\n"
+            + "Full guide: http://127.0.0.1:8000/guides/quickstart-minikube/ (+ PDF).";
+    }
+    private String aboutText() {
+        return "JKubeTerm 0.1 — JavaFX 21 desktop Kubernetes client (Fabric8 7.3.1).\n"
+            + "Blocking I/O on worker jkubeterm-kubernetes-io, UI updates via Platform.runLater.\n"
+            + "Docs: http://127.0.0.1:8000/ — architecture, diagrams, guides.";
+    }
     private void info(String message) { Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK); alert.setHeaderText(null); alert.showAndWait(); }
     private void error(String title, Throwable ex) { status.setText(title + ": " + ex.getMessage()); Alert alert = new Alert(Alert.AlertType.ERROR, ex.getMessage() == null ? ex.toString() : ex.getMessage(), ButtonType.OK); alert.setTitle(title); alert.setHeaderText(title); alert.show(); }
     private void task(ThrowingAction action) { worker.submit(() -> { try { action.run(); } catch (Exception e) { Platform.runLater(() -> error("Kubernetes operation failed", e)); } }); }
