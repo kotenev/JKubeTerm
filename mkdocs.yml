@@ -62,6 +62,7 @@ exclude_docs: |
 
 nav:
   - Home: index.md
+  - UI Wireframe: ui-wireframe.md
   - Architecture:
       - Overview: architecture/overview.md
       - Components & modules: architecture/components.md
