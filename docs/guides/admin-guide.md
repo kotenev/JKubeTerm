@@ -64,7 +64,9 @@ kubectl -n default create token lab-viewer --duration=24h
 Пример AppProject-ограничения для демо-команды:
 
 ```yaml
+# noinspection KubernetesUnknownResourcesInspection
 apiVersion: argoproj.io/v1alpha1
+# noinspection KubernetesUnknownResourcesInspection
 kind: AppProject
 metadata:
   name: lab-demo
@@ -84,8 +86,10 @@ spec:
 - cert-manager issuers для лаборатории:
 
 ```yaml
+# noinspection KubernetesUnknownResourcesInspection
 # staging — пока отлаживаете; prod — когда DNS настоящий
 apiVersion: cert-manager.io/v1
+# noinspection KubernetesUnknownResourcesInspection
 kind: ClusterIssuer
 metadata:
   name: letsencrypt-staging
@@ -182,7 +186,7 @@ JKubeTerm при смене контекста: **↻ Config** → **Connect** �
 | Ingress 404 | класс ingress (`ingressClassName: nginx`?), `kubectl -n ingress-nginx get svc`, `kubectl describe ingress` |
 | ArgoCD `OutOfSync` | `argocd app get podinfo` / UI → diff; проверьте `targetRevision` и namespace-destination |
 | Prometheus OOMKilled | `kubectl top pods -n monitoring`; режьте retention, поднимайте память профиля |
-| `helm list` пуст в JKubeTerm | не тот namespace в комбо (дефолт `default`, релизы в своих ns) — [user-guide](user-guide.md#helm-releases) |
+| `helm list` пуст в JKubeTerm | не тот namespace в комбо (дефолт `default`, релизы в своих ns) — раздел Helm releases в [user-guide](user-guide.md) |
 | Port-forward висит | процесс умрёт с выходом из JKubeTerm; занятый local-порт — выберите другой |
 | `CERTIFICATE_VERIFY_FAILED` | контекст/CA/endpoint; не отключать TLS — [security](../operations/security.md) |
 

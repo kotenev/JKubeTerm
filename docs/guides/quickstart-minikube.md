@@ -273,7 +273,7 @@ kubectl -n argocd get application podinfo
 таблица + фильтр по имени; **Events** подскажет причину CrashLoop; **Pod logs**
 покажет последние 500 строк.
 
-## Access map {#access-map}
+## Access map
 
 | Сервис | Namespace / Service | Port-forward через JKubeTerm | URL |
 |---|---|---|---|

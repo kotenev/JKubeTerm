@@ -86,7 +86,7 @@ JKubeTerm — десктопный Kubernetes-клиент (JavaFX 21, Fabric8 7
 6. Процесс живёт до выхода из приложения — кнопки «остановить» нет.
 
 Типовые пары для лаборатории: ArgoCD `8080:80`, Grafana `3000:80`,
-Prometheus `9090:9090`, см. карту в [quickstart-minikube](quickstart-minikube.md#access-map).
+Prometheus `9090:9090`, см. раздел Access map в [quickstart-minikube](quickstart-minikube.md).
 
 ## Deployments: scale и restart {#scale-restart}
 
@@ -98,7 +98,7 @@ Prometheus `9090:9090`, см. карту в [quickstart-minikube](quickstart-min
 Не-Deployment для этих кнопок (и не-Pod для логов/exec, не-Pod/Service для
 форварда) — info-диалог без побочных эффектов.
 
-## Helm releases {#helm-releases}
+## Helm releases
 
 Кнопка собирает `helm --kube-context … --kubeconfig … --namespace <ns|default> list --all`
 и выполняет через `ExternalTools.run(…, 30)`; вывод — в консоль. Это **только листинг**:
