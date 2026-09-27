@@ -95,7 +95,9 @@ curl -H "Host: demo.127.0.0.1.nip.io" http://$(minikube ip)/
 Чарт уже стоит (QuickStart §4.1). Staging-Issuer для лаборатории:
 
 ```yaml
+# noinspection KubernetesUnknownResourcesInspection
 apiVersion: cert-manager.io/v1
+# noinspection KubernetesUnknownResourcesInspection
 kind: ClusterIssuer
 metadata:
   name: letsencrypt-staging
