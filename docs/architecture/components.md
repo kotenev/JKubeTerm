@@ -96,7 +96,7 @@ classDiagram
 | Tutorial hint | `Label.tutorial-hint` under toolbar (hidden unless touring) | `«Tutorial i/N — title + body»`; Next/Finish advances, Exit stops and clears highlight |
 | Left | `ListView<ResourceKind>` (w=180) | All 14 kinds; selection → `refresh()` |
 | Middle | filter `TextField` + `TableView<HasMetadata>` | Columns Name / Namespace / Kind / Created; filter applies locally (lowercase `contains`) via `showItems()`; constrained flex-last-column resize |
-| Right | Edit-mode checkbox, Apply YAML, Delete, Pod logs, Exec command, Port forward, Scale, Restart, Helm releases, Save YAML…, New YAML; manifest `TextArea`; console `TextArea` | FlowPane of actions; `editMode.selectedProperty` toggles manifest editability; row selection loads `service.yaml(item)` and resets edit mode |
+| Right | Edit-mode checkbox, Apply YAML, Delete, Pod logs, Exec command, Port forward, Scale, Restart, Helm releases, Save YAML…, New YAML; manifest `TextArea`; **Object** `TreeView` (`ResourceInspector`); console `TextArea` | FlowPane of actions; `editMode.selectedProperty` toggles manifest editability; row selection loads `service.yaml(item)` + `showObject(item)` (typed sections + ⇄ Relations graph) and resets edit mode |
 | Bottom | status `Label` | Every state transition writes a status message |
 
 ### Instance state
@@ -142,6 +142,30 @@ plus a classified cause hint (TLS / 401 / 403 / unreachable / DNS).
 dialog; `refresh()` on an empty result prints the scope (`ns=` vs cluster-scope)
 plus a kind-specific hint instead of staying silent. Covered by
 `ConnectionDiagnosticsTest` (missing file, unresolvable host, hint classifier).
+
+### Object parser and platform visualization
+
+`ResourceInspector` (`src/main/java/dev/jkubeterm/ResourceInspector.java:29`) is a
+pure-static, JavaFX-free parser: `inspect(HasMetadata)` returns ordered `Section`s
+(`title` + `Row(field, value)`) plus cross-resource `Relation(from, to, label)`.
+Coverage: Pod (phase/IPs/QoS/conditions, container statuses with state decoding,
+init + app containers with image/ports/env/envFrom/resources/mounts/probes,
+volumes with configmap/secret/pvc backends as relations), Deployment (replicas,
+strategy + maxSurge/maxUnavailable, selector, status counts, pod template +
+restartedAt rollout marker), StatefulSet (replicas, headless-service relation,
+claim templates), DaemonSet (desired/ready/updated), Service (type/clusterIP/
+selectors/ports incl. nodePort, externalIPs, LB-ingress relations), ConfigMap
+(key preview ≤120 chars, binaryKeys, immutable), Secret (keys + lengths only —
+values never exposed), Job/CronJob (completions/parallelism/backoff, schedule/
+suspend/history, statuses, pod templates), Ingress (class, host+path→service
+route relations, TLS hosts→secret), PVC/PV (accessModes, storageClass,
+requests/capacity, phases, bound-to/claimed-by relations), Node (capacity/
+allocatable, kubelet/os/arch, Ready conditions, addresses, taints), Namespace
+(phase), Event (type/reason/message/count + about-relation). `adjacency()`
+builds a from→to map with labels for graph rendering, skipping empty endpoints.
+`showObject()` in `JKubeTermApp` renders sections as `§`-nodes and relations as
+a `⇄ Relations` subtree in the Object `TreeView` between Manifest and console.
+Covered by `ResourceInspectorTest` (12 tests incl. secret non-exposure).
 
 ## 3. `KubernetesService` — Fabric8 facade
 

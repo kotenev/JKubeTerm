@@ -32,6 +32,7 @@ public final class JKubeTermApp extends Application {
     private final TableView<HasMetadata> table = new TableView<>();
     private final TextArea details = new TextArea();
     private final TextArea console = new TextArea();
+    private final TreeView<String> objectView = new TreeView<>();
     private final Label status = new Label("Choose a context");
     private final TextField filter = new TextField();
     private final CheckBox editMode = new CheckBox("Edit YAML");
@@ -74,8 +75,14 @@ public final class JKubeTermApp extends Application {
         TableColumn<HasMetadata, String> age = column("Created", o -> o.getMetadata().getCreationTimestamp());
         table.getColumns().addAll(List.of(name, namespace, kind, age));
         table.getSelectionModel().selectedItemProperty().addListener((obs, old, item) -> {
-            if (item != null && service != null) { details.setText(service.yaml(item)); editMode.setSelected(false); details.setEditable(false); advanceTutorial("select-row"); }
+            if (item != null && service != null) {
+                details.setText(service.yaml(item));
+                showObject(item);
+                editMode.setSelected(false); details.setEditable(false); advanceTutorial("select-row");
+            }
         });
+        objectView.setRoot(new TreeItem<>("Select a resource"));
+        objectView.setShowRoot(true);
         details.setEditable(false); details.setWrapText(false); details.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
         console.setEditable(false); console.setWrapText(true); console.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
         editMode.selectedProperty().addListener((obs, old, enabled) -> { details.setEditable(enabled); if (enabled) advanceTutorial("edit-mode"); });
@@ -95,9 +102,9 @@ public final class JKubeTermApp extends Application {
         FlowPane actions = new FlowPane(6, 6, editMode, apply, remove, logs, shell, forward, scale, restart, helm, save, newYaml);
         actions.setPadding(new Insets(8));
         actionsPane = actions;
-        VBox right = new VBox(8, actions, new Label("Manifest"), details, new Label("Output / logs"), console);
-        VBox.setVgrow(details, Priority.ALWAYS); VBox.setVgrow(console, Priority.ALWAYS);
-        details.setPrefRowCount(16); console.setPrefRowCount(9);
+        VBox right = new VBox(8, actions, new Label("Manifest"), details, new Label("Object"), objectView, new Label("Output / logs"), console);
+        VBox.setVgrow(details, Priority.ALWAYS); VBox.setVgrow(objectView, Priority.ALWAYS); VBox.setVgrow(console, Priority.ALWAYS);
+        details.setPrefRowCount(10); objectView.setPrefHeight(220); console.setPrefRowCount(7);
         VBox middle = new VBox(8, filter, table); VBox.setVgrow(table, Priority.ALWAYS);
         SplitPane content = new SplitPane(kinds, middle, right); content.setDividerPositions(.15, .55);
         Menu helpMenu = new Menu("Help");
@@ -205,6 +212,29 @@ public final class JKubeTermApp extends Application {
     private void showItems() {
         String query = filter.getText().strip().toLowerCase(java.util.Locale.ROOT);
         table.setItems(FXCollections.observableArrayList(currentItems.stream().filter(i -> i.getMetadata() != null && i.getMetadata().getName() != null && i.getMetadata().getName().toLowerCase(java.util.Locale.ROOT).contains(query)).toList()));
+    }
+    private void showObject(HasMetadata item) {
+        ResourceInspector.Inspection inspection = ResourceInspector.inspect(item);
+        TreeItem<String> root = new TreeItem<>(inspection.sections().isEmpty() ? item.getKind() + " " + item.getMetadata().getName()
+            : item.getKind() + " " + item.getMetadata().getName() + " — " + inspection.sections().size() + " sections, " + inspection.relations().size() + " links");
+        root.setExpanded(true);
+        for (ResourceInspector.Section section : inspection.sections()) {
+            TreeItem<String> sectionNode = new TreeItem<>("§ " + section.title());
+            sectionNode.setExpanded(section.rows().size() <= 12);
+            for (ResourceInspector.Row row : section.rows())
+                sectionNode.getChildren().add(new TreeItem<>(row.field() + (row.value().isEmpty() ? "" : ": " + row.value())));
+            root.getChildren().add(sectionNode);
+        }
+        if (!inspection.relations().isEmpty()) {
+            TreeItem<String> graph = new TreeItem<>("⇄ Relations");
+            graph.setExpanded(true);
+            for (ResourceInspector.Relation relation : inspection.relations()) {
+                if (relation.to() == null || relation.to().isEmpty()) continue;
+                graph.getChildren().add(new TreeItem<>(relation.from() + " —[" + relation.label() + "]→ " + relation.to()));
+            }
+            if (!graph.getChildren().isEmpty()) root.getChildren().add(graph);
+        }
+        objectView.setRoot(root);
     }
     private HasMetadata selected() { HasMetadata item = table.getSelectionModel().getSelectedItem(); if (item == null) info("Select a resource first."); return item; }
     private boolean confirm(String title, String body) {
@@ -432,6 +462,7 @@ public final class JKubeTermApp extends Application {
             case "filter" -> filter;
             case "table" -> table;
             case "details" -> details;
+            case "objectView" -> objectView;
             case "editMode" -> editMode;
             case "apply" -> applyButton;
             case "remove" -> removeButton;
