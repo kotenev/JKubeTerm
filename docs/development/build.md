@@ -18,10 +18,16 @@
 | Native app image | see the `jpackage` recipe in the repository-root `README.md` — `--main-class dev.jkubeterm.JKubeTermApp` |
 
 ```bash
-# Full packaging sequence (per-platform, run on the target OS)
+# Full packaging sequence (per-platform, run on the target OS).
+# NOTE: jpackage has no --class-path option. All jars (main + runtime deps)
+# must sit FLAT in --input; --main-jar is relative to that dir.
+# A 'dependency/*' subdir inside --input is NOT on the classpath — the app
+# fails at launch with "JavaFX runtime components are missing".
 mvn -DskipTests package dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/dependency
-jpackage --type app-image --name JKubeTerm --input target --main-jar jkubeterm-0.1.0.jar \
-  --main-class dev.jkubeterm.JKubeTermApp --class-path 'dependency/*' --dest target/dist
+rm -rf target/jpackage-input target/dist && mkdir -p target/jpackage-input
+cp target/jkubeterm-0.1.0.jar target/dependency/*.jar target/jpackage-input/
+jpackage --type app-image --name JKubeTerm --input target/jpackage-input \
+  --main-jar jkubeterm-0.1.0.jar --main-class dev.jkubeterm.JKubeTermApp --dest target/dist
 ```
 
 Validate the packaged image on Linux and macOS independently — JavaFX
