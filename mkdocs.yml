@@ -49,11 +49,13 @@ markdown_extensions:
 
 extra_css:
   - css/sidebar-toggle.css
+  - css/diagram-zoom.css
 
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
   - js/mermaid-init.js
   - js/sidebar-toggle.js
+  - js/diagram-zoom.js
 
 exclude_docs: |
   models/*
