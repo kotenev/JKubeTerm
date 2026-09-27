@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  JKubeTerm 0.1.0 — ArchiMate 3 model in Archi's model-exchange format.
+  Open with the Archi tool: File -> Import -> ArchiMate Model Exchange.
+  Keep element names in sync with docs/diagrams (PlantUML, Mermaid, Structurizr).
+-->
+<archimate:model xmlns:archimate="http://www.archimatetool.com/archimate"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 name="JKubeTerm" id="id-model-jkubeterm" version="4.9.0">
+  <folders>
+    <folder id="id-fld-business" name="Business" type="business"/>
+    <folder id="id-fld-application" name="Application" type="application"/>
+    <folder id="id-fld-technology" name="Technology" type="technology"/>
+    <folder id="id-fld-relations" name="Relations" type="relations"/>
+    <folder id="id-fld-diagrams" name="Views" type="diagrams"/>
+  </folders>
+
+  <elements>
+    <!-- Business layer -->
+    <element id="el-user" xsi:type="archimate:BusinessActor" name="Kubernetes Developer"
+             documentation="Uses JKubeTerm on a workstation to view and manage Kubernetes resources."/>
+    <!-- Application layer -->
+    <element id="el-jkt" xsi:type="archimate:ApplicationComponent" name="JKubeTerm"
+             documentation="JavaFX desktop Kubernetes client (single JVM, Java 21)."/>
+    <element id="el-ui" xsi:type="archimate:ApplicationComponent" name="UI Shell (JKubeTermApp)"/>
+    <element id="el-worker" xsi:type="archimate:ApplicationComponent" name="Worker Executor"
+             documentation="Single daemon thread jkubeterm-kubernetes-io; all blocking I/O."/>
+    <element id="el-svc" xsi:type="archimate:ApplicationComponent" name="Kubernetes Service"/>
+    <element id="el-loader" xsi:type="archimate:ApplicationComponent" name="Kubeconfig Loader"/>
+    <element id="el-bridge" xsi:type="archimate:ApplicationComponent" name="External Tools Bridge"/>
+    <element id="el-svc-browse" xsi:type="archimate:ApplicationService" name="Resource Browsing Service"/>
+    <element id="el-svc-manifest" xsi:type="archimate:ApplicationService" name="Manifest Management Service"/>
+    <element id="el-svc-log" xsi:type="archimate:ApplicationService" name="Log Access Service"/>
+    <element id="el-svc-deploy" xsi:type="archimate:ApplicationService" name="Deployment Control Service"/>
+    <element id="el-svc-ctx" xsi:type="archimate:ApplicationService" name="Context Discovery Service"/>
+    <element id="el-svc-cli" xsi:type="archimate:ApplicationService" name="CLI Integration Service"/>
+    <element id="el-kubeconfig" xsi:type="archimate:DataObject" name="Kubeconfig File(s)"/>
+    <element id="el-yaml" xsi:type="archimate:DataObject" name="Resource YAML"/>
+    <!-- Technology layer -->
+    <element id="el-ws" xsi:type="archimate:Node" name="User Workstation (Linux/macOS)"/>
+    <element id="el-jdk" xsi:type="archimate:SystemSoftware" name="JDK 21 + JavaFX 21 runtime"/>
+    <element id="el-cli" xsi:type="archimate:SystemSoftware" name="kubectl / helm binaries"/>
+    <element id="el-k8s" xsi:type="archimate:Node" name="Kubernetes Cluster (API Server)"/>
+  </elements>
+
+  <relationships>
+    <!-- Actor assignment -->
+    <relationship id="rel-user-app" xsi:type="archimate:AssignmentRelationship"
+                  source="el-user" target="el-jkt"/>
+    <!-- Composition: JKubeTerm contains its container components -->
+    <relationship id="rel-comp-ui" xsi:type="archimate:CompositionRelationship" source="el-jkt" target="el-ui"/>
+    <relationship id="rel-comp-worker" xsi:type="archimate:CompositionRelationship" source="el-jkt" target="el-worker"/>
+    <relationship id="rel-comp-svc" xsi:type="archimate:CompositionRelationship" source="el-jkt" target="el-svc"/>
+    <relationship id="rel-comp-loader" xsi:type="archimate:CompositionRelationship" source="el-jkt" target="el-loader"/>
+    <relationship id="rel-comp-bridge" xsi:type="archimate:CompositionRelationship" source="el-jkt" target="el-bridge"/>
+    <!-- Triggering: UI submits tasks to the worker -->
+    <relationship id="rel-ui-worker" xsi:type="archimate:TriggeringRelationship"
+                  source="el-ui" target="el-worker" name="submits tasks"/>
+    <!-- Realization: components realize application services -->
+    <relationship id="rel-real-browse" xsi:type="archimate:RealizationRelationship" source="el-svc" target="el-svc-browse"/>
+    <relationship id="rel-real-manifest" xsi:type="archimate:RealizationRelationship" source="el-svc" target="el-svc-manifest"/>
+    <relationship id="rel-real-log" xsi:type="archimate:RealizationRelationship" source="el-svc" target="el-svc-log"/>
+    <relationship id="rel-real-deploy" xsi:type="archimate:RealizationRelationship" source="el-svc" target="el-svc-deploy"/>
+    <relationship id="rel-real-ctx" xsi:type="archimate:RealizationRelationship" source="el-loader" target="el-svc-ctx"/>
+    <relationship id="rel-real-cli" xsi:type="archimate:RealizationRelationship" source="el-bridge" target="el-svc-cli"/>
+    <!-- Serving: services serve the UI -->
+    <relationship id="rel-serv-browse" xsi:type="archimate:ServingRelationship" source="el-svc-browse" target="el-ui"/>
+    <relationship id="rel-serv-manifest" xsi:type="archimate:ServingRelationship" source="el-svc-manifest" target="el-ui"/>
+    <relationship id="rel-serv-log" xsi:type="archimate:ServingRelationship" source="el-svc-log" target="el-ui"/>
+    <relationship id="rel-serv-deploy" xsi:type="archimate:ServingRelationship" source="el-svc-deploy" target="el-ui"/>
+    <relationship id="rel-serv-ctx" xsi:type="archimate:ServingRelationship" source="el-svc-ctx" target="el-ui"/>
+    <relationship id="rel-serv-cli" xsi:type="archimate:ServingRelationship" source="el-svc-cli" target="el-ui"/>
+    <!-- Access to passive structure -->
+    <relationship id="rel-access-kc-loader" xsi:type="archimate:AccessRelationship"
+                  source="el-loader" target="el-kubeconfig" name="read (discovery)"/>
+    <relationship id="rel-access-kc-svc" xsi:type="archimate:AccessRelationship"
+                  source="el-svc" target="el-kubeconfig" name="read (Config.fromKubeconfig)"/>
+    <relationship id="rel-access-yaml" xsi:type="archimate:AccessRelationship"
+                  source="el-svc" target="el-yaml" name="read/write (editor, apply, export)"/>
+    <!-- Technology -->
+    <relationship id="rel-agg-ws-jdk" xsi:type="archimate:AggregationRelationship" source="el-ws" target="el-jdk"/>
+    <relationship id="rel-agg-ws-cli" xsi:type="archimate:AggregationRelationship" source="el-ws" target="el-cli"/>
+    <relationship id="rel-real-app" xsi:type="archimate:RealizationRelationship"
+                  source="el-jdk" target="el-jkt" name="runtime realizes application"/>
+    <relationship id="rel-serv-cli-cap" xsi:type="archimate:ServingRelationship"
+                  source="el-cli" target="el-bridge" name="exec / port-forward / helm list"/>
+    <relationship id="rel-flow-api" xsi:type="archimate:FlowRelationship"
+                  source="el-svc" target="el-k8s" name="HTTPS :443 (kubeconfig TLS)"/>
+    <relationship id="rel-flow-api-cli" xsi:type="archimate:FlowRelationship"
+                  source="el-cli" target="el-k8s" name="HTTPS :443"/>
+  </relationships>
+
+  <views>
+    <view id="view-app-structure" name="JKubeTerm Application Structure">
+      <node id="vn-user" name="Kubernetes Developer" element="el-user" x="300" y="24" w="180" h="70"/>
+      <node id="vn-jkt" name="JKubeTerm" element="el-jkt" x="120" y="170" w="720" h="330">
+        <node id="vn-ui" name="UI Shell (JKubeTermApp)" element="el-ui" x="24" y="60" w="180" h="70"/>
+        <node id="vn-worker" name="Worker Executor" element="el-worker" x="24" y="170" w="180" h="70"/>
+        <node id="vn-svc" name="Kubernetes Service" element="el-svc" x="244" y="60" w="180" h="70"/>
+        <node id="vn-loader" name="Kubeconfig Loader" element="el-loader" x="244" y="170" w="180" h="70"/>
+        <node id="vn-bridge" name="External Tools Bridge" element="el-bridge" x="464" y="170" w="180" h="70"/>
+      </node>
+      <node id="vn-s1" name="Resource Browsing Service" element="el-svc-browse" x="24" y="560" w="200" h="60"/>
+      <node id="vn-s2" name="Manifest Management Service" element="el-svc-manifest" x="244" y="560" w="200" h="60"/>
+      <node id="vn-s3" name="Log Access Service" element="el-svc-log" x="464" y="560" w="180" h="60"/>
+      <node id="vn-s4" name="Deployment Control Service" element="el-svc-deploy" x="672" y="560" w="200" h="60"/>
+      <node id="vn-s5" name="Context Discovery Service" element="el-svc-ctx" x="24" y="672" w="200" h="60"/>
+      <node id="vn-s6" name="CLI Integration Service" element="el-svc-cli" x="672" y="672" w="200" h="60"/>
+      <node id="vn-kc" name="Kubeconfig File(s)" element="el-kubeconfig" x="900" y="244" w="170" h="70"/>
+      <node id="vn-yaml" name="Resource YAML" element="el-yaml" x="900" y="340" w="170" h="70"/>
+      <node id="vn-k8s" name="Kubernetes Cluster (API Server)" element="el-k8s" x="900" y="470" w="200" h="80"/>
+      <connection id="vc-user-jkt" source="vn-user" target="vn-jkt" relationship="rel-user-app"/>
+      <connection id="vc-ui-worker" source="vn-ui" target="vn-worker" relationship="rel-ui-worker"/>
+      <connection id="vc-s1" source="vn-s1" target="vn-ui" relationship="rel-serv-browse"/>
+      <connection id="vc-s2" source="vn-s2" target="vn-ui" relationship="rel-serv-manifest"/>
+      <connection id="vc-s3" source="vn-s3" target="vn-ui" relationship="rel-serv-log"/>
+      <connection id="vc-s4" source="vn-s4" target="vn-ui" relationship="rel-serv-deploy"/>
+      <connection id="vc-s5" source="vn-s5" target="vn-ui" relationship="rel-serv-ctx"/>
+      <connection id="vc-s6" source="vn-s6" target="vn-ui" relationship="rel-serv-cli"/>
+      <connection id="vc-kc-loader" source="vn-loader" target="vn-kc" relationship="rel-access-kc-loader"/>
+      <connection id="vc-kc-svc" source="vn-svc" target="vn-kc" relationship="rel-access-kc-svc"/>
+      <connection id="vc-yaml" source="vn-svc" target="vn-yaml" relationship="rel-access-yaml"/>
+      <connection id="vc-api" source="vn-svc" target="vn-k8s" relationship="rel-flow-api"/>
+    </view>
+  </views>
+</archimate:model>

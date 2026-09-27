@@ -69,6 +69,8 @@ The `jpackage` recipe is a starting point: JavaFX native launcher/module-path re
 `JKubeTermApp` (JavaFX UI) → `KubernetesService` (Fabric8 API) → Kubernetes API server.
 `KubeconfigLoader` discovers local contexts. `ExternalTools` performs argv-based subprocess invocation for optional commands without invoking a shell. Network calls use a background single-thread executor.
 
+Detailed architectural documentation (C4 views, sequences, threading, ADRs, plus PlantUML, Mermaid, Archi/ArchiMate and Structurizr models) lives in `docs/` — build and preview it with `pip install -r requirements-docs.txt && mkdocs serve` (see `mkdocs.yml`).
+
 ## Roadmap
 
 1. Streaming Kubernetes Watch API and incremental list updates.
