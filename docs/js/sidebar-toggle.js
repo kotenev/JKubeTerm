@@ -1,9 +1,9 @@
 /*
  * Sidebar collapse toggles for the Material for MkDocs theme.
- * Adds two fixed buttons (bottom-right, under the back-to-top control)
- * that toggle left navigation and right ToC via the [hidden] attribute.
- * Material's own CSS already reflows .md-content__inner when a sidebar
- * is [hidden]; extra CSS only defines the toggle buttons themselves.
+ * Adds two buttons (Nav / ToC) to the right corner of the top header
+ * (.md-header__inner) that toggle left navigation and right ToC via the
+ * [hidden] attribute. Material's own CSS already reflows .md-content__inner
+ * when a sidebar is [hidden]; extra CSS only styles the header buttons.
  */
 (function () {
   "use strict";
@@ -58,40 +58,55 @@
   }
 
   function buildBar() {
-    if (document.querySelector(".jk-side-toggle")) return;
-    var bar = document.createElement("div");
-    bar.className = "jk-side-toggle";
-    bar.setAttribute("role", "group");
-    bar.setAttribute("aria-label", "Sidebar visibility");
+    var bar = document.querySelector(".md-header__inner > .jk-side-toggle");
+    var header = document.querySelector(".md-header__inner");
+    if (!header) return;
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.className = "jk-side-toggle";
+      bar.setAttribute("role", "group");
+      bar.setAttribute("aria-label", "Sidebar visibility");
+      header.appendChild(bar);
+    }
 
-    var btnNav = document.createElement("button");
-    btnNav.type = "button";
-    btnNav.id = "jk-toggle-nav";
-    btnNav.title = "Show/hide left navigation (N)";
-    btnNav.innerHTML = iconFor("nav") + "<span>Nav</span>";
+    var btnNav = bar.querySelector("#jk-toggle-nav");
+    if (!btnNav) {
+      btnNav = document.createElement("button");
+      btnNav.type = "button";
+      btnNav.id = "jk-toggle-nav";
+      btnNav.title = "Show/hide left navigation (N)";
+      btnNav.innerHTML = iconFor("nav") + "<span>Nav</span>";
+      btnNav.addEventListener("click", function () {
+        state.nav = !state.nav;
+        apply(first(PRIMARY), state.nav);
+        syncButtons(
+          bar.querySelector("#jk-toggle-nav"),
+          bar.querySelector("#jk-toggle-toc")
+        );
+        save();
+      });
+      bar.appendChild(btnNav);
+    }
 
-    var btnToc = document.createElement("button");
-    btnToc.type = "button";
-    btnToc.id = "jk-toggle-toc";
-    btnToc.title = "Show/hide table of contents (T)";
-    btnToc.innerHTML = iconFor("toc") + "<span>ToC</span>";
+    var btnToc = bar.querySelector("#jk-toggle-toc");
+    if (!btnToc) {
+      btnToc = document.createElement("button");
+      btnToc.type = "button";
+      btnToc.id = "jk-toggle-toc";
+      btnToc.title = "Show/hide table of contents (T)";
+      btnToc.innerHTML = iconFor("toc") + "<span>ToC</span>";
+      btnToc.addEventListener("click", function () {
+        state.toc = !state.toc;
+        apply(first(SECONDARY), state.toc);
+        syncButtons(
+          bar.querySelector("#jk-toggle-nav"),
+          bar.querySelector("#jk-toggle-toc")
+        );
+        save();
+      });
+      bar.appendChild(btnToc);
+    }
 
-    btnNav.addEventListener("click", function () {
-      state.nav = !state.nav;
-      apply(first(PRIMARY), state.nav);
-      syncButtons(btnNav, btnToc);
-      save();
-    });
-    btnToc.addEventListener("click", function () {
-      state.toc = !state.toc;
-      apply(first(SECONDARY), state.toc);
-      syncButtons(btnNav, btnToc);
-      save();
-    });
-
-    bar.appendChild(btnNav);
-    bar.appendChild(btnToc);
-    document.body.appendChild(bar);
     syncButtons(btnNav, btnToc);
   }
 
