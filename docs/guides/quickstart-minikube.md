@@ -1,5 +1,8 @@
 # QuickStart — домашняя лаборатория: minikube (docker) + JKubeTerm
 
+> **PDF:** [quickstart-minikube.pdf](quickstart-minikube.pdf) — печать этой страницы
+> (кнопка доступна после `tools/export-guides-pdf.sh`).
+
 Цель: с нуля поднять одноузловой кластер на `minikube --driver=docker`
 и настроить «новомодный» стек домашней лаборатории, управляя им через JKubeTerm.
 Время: 45–90 минут. Проверено на связке minikube v1.39.0 / Kubernetes v1.37 / ArgoCD v3.4.8 /

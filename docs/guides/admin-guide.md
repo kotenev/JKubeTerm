@@ -1,5 +1,8 @@
 # Руководство администратора домашней лаборатории
 
+> **PDF:** [admin-guide.pdf](admin-guide.pdf) — печать этой страницы
+> (кнопка доступна после `tools/export-guides-pdf.sh`).
+
 Аудитория: вы — и пользователь, и админ кластера minikube из
 [quickstart-minikube](quickstart-minikube.md). Здесь: RBAC для UI-доступов,
 GitOps-раскладка, hardening, ресурсы, бэкапы, апгрейды, зачистка.

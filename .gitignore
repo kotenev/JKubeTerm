@@ -3,3 +3,6 @@ target/
 
 # MkDocs build output
 site/
+
+# Generated guide PDFs (tools/export-guides-pdf.sh) — build artifacts
+docs/guides/*.pdf

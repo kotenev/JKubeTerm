@@ -74,6 +74,7 @@ flowchart LR
 - **Operations** — [security](operations/security.md), [roadmap](operations/roadmap.md)
 - **Guides** — [QuickStart: minikube home lab](guides/quickstart-minikube.md),
   [user guide](guides/user-guide.md), [admin guide](guides/admin-guide.md)
+  (each guide offers a printable PDF via `tools/export-guides-pdf.sh`)
 
 ## Building this documentation
 

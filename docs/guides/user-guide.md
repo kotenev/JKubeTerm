@@ -1,5 +1,8 @@
 # Руководство пользователя JKubeTerm
 
+> **PDF:** [user-guide.pdf](user-guide.pdf) — печать этой страницы
+> (кнопка доступна после `tools/export-guides-pdf.sh`).
+
 JKubeTerm — десктопный Kubernetes-клиент (JavaFX 21, Fabric8 7.3.1): просмотр
 ресурсов, YAML, логи, exec, port-forward, scale/restart, `helm list`.
 Установка чартов, интерактивный shell и удаление port-forward кнопкой —
