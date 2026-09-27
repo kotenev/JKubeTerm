@@ -72,6 +72,8 @@ flowchart LR
   [Archi/ArchiMate](diagrams/archi.md) and [Structurizr C4](diagrams/structurizr.md) sources
 - **Development** — [build & packaging](development/build.md), [testing](development/testing.md)
 - **Operations** — [security](operations/security.md), [roadmap](operations/roadmap.md)
+- **Guides** — [QuickStart: minikube home lab](guides/quickstart-minikube.md),
+  [user guide](guides/user-guide.md), [admin guide](guides/admin-guide.md)
 
 ## Building this documentation
 

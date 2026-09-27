@@ -81,6 +81,10 @@ nav:
   - Development:
       - Build & packaging: development/build.md
       - Testing: development/testing.md
+  - Guides:
+      - QuickStart — minikube home lab: guides/quickstart-minikube.md
+      - User guide: guides/user-guide.md
+      - Admin guide: guides/admin-guide.md
   - Operations:
       - Security: operations/security.md
       - Roadmap: operations/roadmap.md
