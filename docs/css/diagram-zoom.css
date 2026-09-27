@@ -10,12 +10,13 @@
 .jk-zoom-canvas img.uml{display:block;max-width:none;height:auto;background:#fff;border-radius:.2rem}
 .jk-zoom-canvas div.mermaid,.jk-zoom-canvas pre.mermaid{margin:0}
 .jk-zoom-canvas svg{display:block;max-width:none;height:auto}
-.jk-zoom:fullscreen{background:var(--md-default-bg-color);border:0;border-radius:0;margin:0;max-height:none;overflow:auto}
-.jk-zoom:fullscreen .jk-zoom-viewport{max-height:calc(100vh - 3rem);padding:1rem}
-.jk-zoom:-webkit-full-screen{background:var(--md-default-bg-color);border:0;border-radius:0;margin:0;max-height:none;overflow:auto}
-.jk-zoom:-webkit-full-screen .jk-zoom-viewport{max-height:calc(100vh - 3rem);padding:1rem}
-.jk-zoom-fallback-fullscreen{position:fixed;inset:0;z-index:60;margin:0;border-radius:0;overflow:auto;background:var(--md-default-bg-color)}
-.jk-zoom-fallback-fullscreen .jk-zoom-viewport{max-height:calc(100vh - 3rem);padding:1rem}
+.jk-zoom:fullscreen,.jk-zoom:-webkit-full-screen,.jk-zoom-fallback-fullscreen{display:flex;flex-direction:column;background:var(--md-default-bg-color);border:0;border-radius:0;margin:0;max-height:none;overflow:hidden;width:100vw;height:100vh;height:100dvh}
+.jk-zoom-fallback-fullscreen{position:fixed;inset:0;z-index:60}
+.jk-zoom:fullscreen .jk-zoom-bar,.jk-zoom:-webkit-full-screen .jk-zoom-bar,.jk-zoom-fallback-fullscreen .jk-zoom-bar{flex:0 0 auto;position:sticky;top:0;z-index:2}
+.jk-zoom:fullscreen .jk-zoom-viewport,.jk-zoom:-webkit-full-screen .jk-zoom-viewport,.jk-zoom-fallback-fullscreen .jk-zoom-viewport{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;padding:1rem}
+.jk-zoom:fullscreen .jk-zoom-canvas,.jk-zoom:-webkit-full-screen .jk-zoom-canvas,.jk-zoom-fallback-fullscreen .jk-zoom-canvas{display:block;width:100%;min-width:0}
+.jk-zoom:fullscreen .jk-zoom-canvas img.uml,.jk-zoom:-webkit-full-screen .jk-zoom-canvas img.uml,.jk-zoom-fallback-fullscreen .jk-zoom-canvas img.uml{width:100%!important;max-width:100%!important;height:auto!important}
+.jk-zoom:fullscreen .jk-zoom-canvas svg,.jk-zoom:-webkit-full-screen .jk-zoom-canvas svg,.jk-zoom-fallback-fullscreen .jk-zoom-canvas svg{width:100%!important;max-width:100%!important;height:auto!important}
 body.jk-zoom-fs-open{overflow:hidden}
 .jk-zoom-return{margin:.5rem;border:1px solid var(--md-default-fg-color--lightest);border-radius:.25rem;background:var(--md-default-bg-color);color:var(--md-default-fg-color);cursor:pointer;font-size:.75rem;padding:.45rem .8rem}
 .jk-zoom-return[hidden]{display:none}
