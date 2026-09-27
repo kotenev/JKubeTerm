@@ -37,11 +37,10 @@ public final class ConnectionDiagnostics {
     }
 
     public static String describe(KubeconfigLoader.ContextRef context, Throwable failure) {
-        String report = "Connect to '" + context.name() + "' failed: "
+        return "Connect to '" + context.name() + "' failed: "
             + (failure == null ? "unknown error" : String.valueOf(failure.getMessage())) + '\n'
             + causeHint(failure) + '\n'
             + diagnose(context);
-        return report;
     }
 
     static List<Check> runChecks(KubeconfigLoader.ContextRef context) {
