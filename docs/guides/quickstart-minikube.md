@@ -241,7 +241,6 @@ Dashboard в интернет без auth-прокси, см. [admin-guide](admi
 
 ```yaml
 # noinspection YAMLSchemaValidation,KubernetesUnknownResource
-# argocd-demo-app.yaml — примените через JKubeTerm Apply YAML или kubectl
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
