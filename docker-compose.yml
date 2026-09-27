@@ -1,6 +1,6 @@
 services:
   plantuml-server:
-    image: plantuml/plantuml-server:latest
+    image: plantuml/plantuml-server:v1.2026.8
     container_name: plantuml-server
     ports:
       - "8080:8080"

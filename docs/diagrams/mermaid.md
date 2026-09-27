@@ -194,7 +194,7 @@ sequenceDiagram
   Note over FX,K: stop() destroys every alive port-forward process
 ```
 
-## 9. State — connection lifecycle
+## 9. State connection lifecycle
 
 ```mermaid
 stateDiagram-v2
