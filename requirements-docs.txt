@@ -1,0 +1,11 @@
+# Python toolchain to build the JKubeTerm architecture documentation site.
+#   python3 -m pip install -r requirements-docs.txt
+#   mkdocs serve     # live preview on http://127.0.0.1:8000
+#   mkdocs build     # static output in site/
+mkdocs>=1.6,<2
+mkdocs-material>=9.5,<10
+pymdown-extensions>=10.7,<11
+
+# Optional: server-side PlantUML rendering inside Markdown.
+# Uncomment together with the "plantuml" entry in mkdocs.yml plugins (not enabled by default).
+# plantuml-markdown>=3.10

@@ -112,7 +112,7 @@ classDiagram
 | Method | Thread | Behaviour |
 |---|---|---|
 | `loadContexts()` | FX | `KubeconfigLoader.paths($KUBECONFIG, user.home)` → `contexts(paths)` → fill combo, select first, status `«N contexts from M kubeconfig file(s)»` |
-| `connect()` | FX → worker → FX | Builds `KubernetesService` on worker, calls `version()` + `namespaces()`; on success swaps service (closing the old one), fills namespaces (prefers `default`), status `«Connected: X | Kubernetes Y»`, triggers `refresh()`; on failure closes the new client and rethrows |
+| `connect()` | FX → worker → FX | Builds `KubernetesService` on worker, calls `version()` + `namespaces()`; on success swaps service (closing the old one), fills namespaces (prefers `default`), status `«Connected: X \| Kubernetes Y»`, triggers `refresh()`; on failure closes the new client and rethrows |
 | `refresh()` | FX → worker → FX | Guarded on live service + selected kind; `List.copyOf(service.list(kind, ns))`, then update table via `showItems()` |
 | `showItems()` | FX | Local name filter: `name.toLowerCase(Locale.ROOT).contains(query)` with null guards |
 | `applyYaml()` / `deleteSelected()` / `scale()` / `restart()` | FX → worker → FX | Confirmation dialog first (`confirm()`), then worker task, then `refresh()` |

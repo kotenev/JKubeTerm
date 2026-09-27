@@ -44,7 +44,7 @@ sequenceDiagram
   FS-->>KL: existing regular files only
   FX->>KL: contexts(paths)
   KL->>FS: SnakeYAML load each file
-  KL-->>FX: List<ContextRef> (first-seen per name)
+  KL-->>FX: List of ContextRef (first-seen per name)
   FX->>FX: combo.setItems, selectFirst, status "N contexts from M file(s)"
 ```
 
@@ -72,7 +72,7 @@ sequenceDiagram
   W->>KS: namespaces()
   KS->>API: GET /api/v1/namespaces
   API-->>KS: sorted namespace names
-  W--)FX: Platform.runLater { swap service, close old, fill ns combo, refresh() }
+  W--)FX: Platform.runLater — swap service, close old, fill ns combo, refresh()
   Note over W,API: on any failure: next.close() then rethrow → error dialog
 ```
 
@@ -92,9 +92,9 @@ sequenceDiagram
   FX->>W: task(refresh) — kind + namespace captured
   W->>KS: list(kind, ns) — namespaceOrDefault(ns)
   KS->>API: typed list call for kind (14 kinds, see catalog)
-  API-->>KS: List<HasMetadata>
+  API-->>KS: List of HasMetadata
   W->>W: List.copyOf(result)
-  W--)FX: currentItems = result; showItems(); status "N <kind> | <context>"
+  W--)FX: currentItems = result, showItems(), status "N rows — kind, context"
   Note over FX: local filter — name.toLowerCase().contains(query)
 ```
 
@@ -112,7 +112,7 @@ sequenceDiagram
   U->>FX: select row
   FX->>KS: yaml(item) → Serialization.asYaml (in-process, no I/O)
   KS-->>FX: YAML text
-  FX->>FX: details.setText; editMode=off; editable=false
+  FX->>FX: details.setText, editMode=off, editable=false
   U->>FX: tick "Edit YAML" → details editable
   Note over FX: "New YAML" seeds a ConfigMap template and enables edit mode
 ```
@@ -137,7 +137,7 @@ sequenceDiagram
   KS->>KS: namespaced & namespace empty → set namespaceOrDefault(ns)
   KS->>API: serverSideApply()
   API-->>KS: applied object
-  W--)FX: console "Applied YAML successfully."; refresh()
+  W--)FX: console "Applied YAML successfully." — then refresh()
 ```
 
 Failure of any step surfaces the exception message in the error dialog; the
@@ -157,7 +157,7 @@ sequenceDiagram
   U-->>FX: OK
   FX->>W: task(delete)
   W->>KS: delete(item) → client.resource(item).delete()
-  W--)FX: console "Delete request submitted."; refresh()
+  W--)FX: console "Delete request submitted." — then refresh()
 ```
 
 ## 7. Pod logs (two-phase, container choice)
@@ -198,7 +198,7 @@ sequenceDiagram
   FX->>ET: kubectl(ctx, ns, "exec", pod, "--", cmd) → argv
   FX->>W: task(run argv, 30 s)
   W->>ET: run(context, argv, 30)
-  ET->>K: ProcessBuilder(argv), env KUBECONFIG=<file>, merged stderr
+  ET->>K: ProcessBuilder(argv), env KUBECONFIG = kubeconfig file, merged stderr
   K->>API: HTTPS exec stream
   ET-->>W: stdout+stderr (UTF-8) or IOException (timeout / non-zero)
   W--)FX: console = output
@@ -219,9 +219,9 @@ sequenceDiagram
   U->>FX: select Pod/Service, click "Port forward"
   FX->>U: TextInputDialog "8080:80"
   U-->>FX: local:remote
-  FX->>FX: validate regex ^\d{1,5}:\d{1,5}$ and ports 1–65535
+  FX->>FX: validate ports regex and ranges 1–65535
   FX->>K: ProcessBuilder(kubectl … port-forward --address 127.0.0.1 kind/name local:remote), env KUBECONFIG
-  FX->>FX: portProcesses.add(process); console "Port-forward started … (PID n). Stops when JKubeTerm exits."
+  FX->>FX: portProcesses.add(process) — console "Port-forward started (PID n). Stops when JKubeTerm exits."
   FX->>W: worker.submit(read merged output)
   W--)FX: on process end — console = buffered kubectl output
   Note over U,K: app exit → stop() → process.destroy() for every alive PF process
@@ -241,7 +241,7 @@ sequenceDiagram
   participant KS as KubernetesService
   U->>FX: select Deployment, click "Scale" / "Restart"
   alt Scale
-    FX->>U: replica count dialog (default "1"); negative → info
+    FX->>U: replica count dialog (default "1") — negative rejected with info
     U-->>FX: n
     FX->>U: confirm "Scale NAME to n replicas?"
     FX->>W: scaleDeployment(ns, name, n) → apps().deployments()…scale(n)
@@ -264,7 +264,7 @@ sequenceDiagram
   FX->>ET: helm(ctx, ns|default, "list", "--all") → argv
   FX->>W: task(run argv, 30 s)
   W->>ET: run(context, argv, 30)
-  ET->>H: ProcessBuilder(argv), env KUBECONFIG=<file>
+  ET->>H: ProcessBuilder(argv), env KUBECONFIG = kubeconfig file
   ET-->>W: stdout or IOException
   W--)FX: console = release table
 ```

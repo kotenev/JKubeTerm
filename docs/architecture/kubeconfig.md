@@ -70,7 +70,11 @@ sequenceDiagram
 ## 3. `ContextRef`
 
 ```java
-public record ContextRef(Path file, String name)
+public record ContextRef(Path file, String name) {
+    @Override public String toString() {
+        return name + "  [" + file.getFileName() + "]";
+    }
+}
 ```
 
 - Immutable pair of the kubeconfig file owning the context and the context name.

@@ -151,7 +151,7 @@ sequenceDiagram
   W->>KS: namespaces()
   KS->>API: GET /api/v1/namespaces
   API-->>KS: sorted names
-  W--)FX: runLater { close old; swap; fill ns combo; status; refresh() }
+  W--)FX: runLater — close old, swap service, fill ns combo, status, refresh()
 ```
 
 ## 7. Sequence — apply YAML (server-side apply)
@@ -173,7 +173,7 @@ sequenceDiagram
   KS->>KS: namespaced & no ns → namespaceOrDefault
   KS->>API: serverSideApply()
   API-->>KS: applied
-  W--)FX: console "Applied YAML successfully."; refresh()
+  W--)FX: console "Applied YAML successfully." — then refresh()
 ```
 
 ## 8. Sequence — port-forward lifecycle
@@ -188,7 +188,7 @@ sequenceDiagram
   U->>FX: Pod/Service + "Port forward" + "8080:80"
   FX->>FX: validate regex + port ranges (1–65535)
   FX->>K: ProcessBuilder — --address 127.0.0.1, env KUBECONFIG
-  FX->>FX: portProcesses.add(process); console "started (PID n)"
+  FX->>FX: portProcesses.add(process) — console "started (PID n)"
   FX->>W: drain merged output
   W--)FX: console = output when process ends
   Note over FX,K: stop() destroys every alive port-forward process
