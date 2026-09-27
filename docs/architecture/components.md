@@ -96,7 +96,7 @@ classDiagram
 | Tutorial hint | `Label.tutorial-hint` under toolbar (hidden unless touring) | `«Tutorial i/N — title + body»`; Next/Finish advances, Exit stops and clears highlight |
 | Left | `ListView<ResourceKind>` (w=180) | All 14 kinds; selection → `refresh()` |
 | Middle | filter `TextField` + `TableView<HasMetadata>` | Columns Name / Namespace / Kind / Created; filter applies locally (lowercase `contains`) via `showItems()`; constrained flex-last-column resize |
-| Right | Edit-mode checkbox, Apply YAML, Delete, Pod logs, Exec command, Port forward, Scale, Restart, Helm releases, Save YAML…, New YAML; manifest `TextArea`; **Object** `TreeView` (`ResourceInspector`); console `TextArea` | FlowPane of actions; `editMode.selectedProperty` toggles manifest editability; row selection loads `service.yaml(item)` + `showObject(item)` (typed sections + ⇄ Relations graph) and resets edit mode |
+| Right | Edit-mode checkbox, Apply YAML, Delete, Pod logs, Exec command, Port forward, Scale, Restart, Helm releases, Save YAML…, New YAML; manifest `TextArea`; **Object** `TreeView` (`ResourceInspector`); console `TextArea` | FlowPane of actions; `editMode.selectedProperty` toggles manifest editability; row selection loads `service.yaml(item)` + `showObject(item)` (typed sections + ⇄ Relations graph) and resets edit mode; ConfigMap PEM rows (`⤓`, `isPemCertificate`) double-click → `exportEntry()` FileChooser save |
 | Bottom | status `Label` | Every state transition writes a status message |
 
 ### Instance state
@@ -165,7 +165,13 @@ allocatable, kubelet/os/arch, Ready conditions, addresses, taints), Namespace
 builds a from→to map with labels for graph rendering, skipping empty endpoints.
 `showObject()` in `JKubeTermApp` renders sections as `§`-nodes and relations as
 a `⇄ Relations` subtree in the Object `TreeView` between Manifest and console.
-Covered by `ResourceInspectorTest` (12 tests incl. secret non-exposure).
+ConfigMap Data rows whose value contains `-----BEGIN CERTIFICATE-----`
+(`isPemCertificate`) are prefixed `⤓` with a «double-click to save» hint;
+double-click opens a FileChooser prefilled with the key name and writes the
+full untruncated value via `exportEntry()` (`ExportableEntry(kind, name, key,
+value)`, `exportableEntries()` — pure data, Secret values stay excluded).
+Covered by `ResourceInspectorTest` (14 tests incl. secret non-exposure and
+certificate export).
 
 ## 3. `KubernetesService` — Fabric8 facade
 

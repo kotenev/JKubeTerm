@@ -40,6 +40,7 @@ public final class ResourceInspector {
     }
     public record Relation(String from, String to, String label) {}
     public record Inspection(List<Section> sections, List<Relation> relations) {}
+    public record ExportableEntry(String kind, String name, String key, String value) {}
 
     public static Inspection inspect(HasMetadata resource) {
         List<Section> sections = new ArrayList<>();
@@ -198,8 +199,10 @@ public final class ResourceInspector {
 
     private static void configMap(io.fabric8.kubernetes.api.model.ConfigMap cm, List<Section> sections) {
         Section data = new Section("Data");
-        for (var entry : nullSafe(cm.getData()).entrySet())
-            data.rows().add(new Row("key " + entry.getKey(), preview(entry.getValue())));
+        for (var entry : nullSafe(cm.getData()).entrySet()) {
+            String hint = isPemCertificate(entry.getValue()) ? " — double-click to save" : "";
+            data.rows().add(new Row("key " + entry.getKey(), preview(entry.getValue()) + hint));
+        }
         data.rows().add(new Row("binaryKeys", String.valueOf(nullSafe(cm.getBinaryData()).size())));
         data.rows().add(new Row("immutable", str(cm.getImmutable())));
         addIfRows(sections, data);
@@ -548,6 +551,21 @@ public final class ResourceInspector {
         if (value == null) return "";
         String flat = value.replace("\n", "\\n");
         return flat.length() > 120 ? flat.substring(0, 120) + "…" : flat;
+    }
+
+    static boolean isPemCertificate(String value) {
+        return value != null && value.contains("-----BEGIN CERTIFICATE-----");
+    }
+
+    public static List<ExportableEntry> exportableEntries(HasMetadata resource) {
+        if (resource instanceof io.fabric8.kubernetes.api.model.ConfigMap cm && cm.getData() != null) {
+            String name = nameOf(resource);
+            return cm.getData().entrySet().stream()
+                .filter(entry -> isPemCertificate(entry.getValue()))
+                .map(entry -> new ExportableEntry("ConfigMap", name, entry.getKey(), entry.getValue()))
+                .toList();
+        }
+        return List.of();
     }
 
     private static <T> List<T> nullSafe(List<T> list) { return list == null ? List.of() : list; }

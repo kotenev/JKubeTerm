@@ -183,4 +183,26 @@ class ResourceInspectorTest {
         assertFalse(all.contains("czNjcjN0"), "secret payload must never appear");
         assertTrue(all.contains("keys=1") || all.contains("password"));
     }
+    @Test void configMapCertificateIsExportable() {
+        String pem = "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n";
+        var cm = new ConfigMapBuilder().withNewMetadata().withName("kube-root-ca.crt").withNamespace("demo").endMetadata()
+            .withData(Map.of("ca.crt", pem)).build();
+        var inspection = ResourceInspector.inspect(cm);
+        String row = inspection.sections().stream().filter(s -> s.title().equals("Data")).flatMap(s -> s.rows().stream())
+            .filter(r -> r.field().equals("key ca.crt")).map(ResourceInspector.Row::value).findFirst().orElse("");
+        assertTrue(row.contains("BEGIN CERTIFICATE"), "preview keeps the PEM marker");
+        assertTrue(row.contains("double-click to save"), "row hints the export action");
+        var entries = ResourceInspector.exportableEntries(cm);
+        assertEquals(1, entries.size());
+        assertEquals("ca.crt", entries.getFirst().key());
+        assertEquals(pem, entries.getFirst().value());
+        assertEquals("kube-root-ca.crt", entries.getFirst().name());
+    }
+    @Test void configMapWithoutCertificateHasNoExportableEntries() {
+        var cm = new ConfigMapBuilder().withNewMetadata().withName("cfg").endMetadata()
+            .withData(Map.of("key", "value")).build();
+        assertTrue(ResourceInspector.exportableEntries(cm).isEmpty());
+        assertTrue(ResourceInspector.exportableEntries(
+            new PodBuilder().withNewMetadata().withName("p").endMetadata().build()).isEmpty());
+    }
 }

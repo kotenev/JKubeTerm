@@ -33,6 +33,7 @@ public final class JKubeTermApp extends Application {
     private final TextArea details = new TextArea();
     private final TextArea console = new TextArea();
     private final TreeView<String> objectView = new TreeView<>();
+    private final java.util.Map<TreeItem<String>, ResourceInspector.ExportableEntry> exportableNodes = new java.util.WeakHashMap<>();
     private final Label status = new Label("Choose a context");
     private final TextField filter = new TextField();
     private final CheckBox editMode = new CheckBox("Edit YAML");
@@ -83,6 +84,13 @@ public final class JKubeTermApp extends Application {
         });
         objectView.setRoot(new TreeItem<>("Select a resource"));
         objectView.setShowRoot(true);
+        objectView.setOnMouseClicked(click -> {
+            if (click.getClickCount() != 2) return;
+            TreeItem<String> selected = objectView.getSelectionModel().getSelectedItem();
+            if (selected == null) return;
+            ResourceInspector.ExportableEntry entry = exportableNodes.get(selected);
+            if (entry != null) exportEntry(entry);
+        });
         details.setEditable(false); details.setWrapText(false); details.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
         console.setEditable(false); console.setWrapText(true); console.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
         editMode.selectedProperty().addListener((obs, old, enabled) -> { details.setEditable(enabled); if (enabled) advanceTutorial("edit-mode"); });
@@ -221,8 +229,15 @@ public final class JKubeTermApp extends Application {
         for (ResourceInspector.Section section : inspection.sections()) {
             TreeItem<String> sectionNode = new TreeItem<>("§ " + section.title());
             sectionNode.setExpanded(section.rows().size() <= 12);
-            for (ResourceInspector.Row row : section.rows())
-                sectionNode.getChildren().add(new TreeItem<>(row.field() + (row.value().isEmpty() ? "" : ": " + row.value())));
+            for (ResourceInspector.Row row : section.rows()) {
+                TreeItem<String> rowNode = new TreeItem<>(row.field() + (row.value().isEmpty() ? "" : ": " + row.value()));
+                ResourceInspector.ExportableEntry entry = exportableEntry(item, section, row);
+                if (entry != null) {
+                    rowNode.setValue("⤓ " + rowNode.getValue());
+                    exportableNodes.put(rowNode, entry);
+                }
+                sectionNode.getChildren().add(rowNode);
+            }
             root.getChildren().add(sectionNode);
         }
         if (!inspection.relations().isEmpty()) {
@@ -235,6 +250,22 @@ public final class JKubeTermApp extends Application {
             if (!graph.getChildren().isEmpty()) root.getChildren().add(graph);
         }
         objectView.setRoot(root);
+    }
+    private ResourceInspector.ExportableEntry exportableEntry(HasMetadata item, ResourceInspector.Section section, ResourceInspector.Row row) {
+        if (!"Data".equals(section.title()) || !row.field().startsWith("key ")) return null;
+        String key = row.field().substring("key ".length());
+        return ResourceInspector.exportableEntries(item).stream().filter(e -> e.key().equals(key)).findFirst().orElse(null);
+    }
+    private void exportEntry(ResourceInspector.ExportableEntry entry) {
+        FileChooser chooser = new FileChooser();
+        chooser.setInitialFileName(entry.key());
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All files", "*.*"));
+        var file = chooser.showSaveDialog(stage);
+        if (file == null) return;
+        try {
+            Files.writeString(file.toPath(), entry.value());
+            output("Saved " + entry.kind() + " " + entry.name() + " key '" + entry.key() + "' to " + file + ".\n");
+        } catch (Exception ex) { error("Save failed", ex); }
     }
     private HasMetadata selected() { HasMetadata item = table.getSelectionModel().getSelectedItem(); if (item == null) info("Select a resource first."); return item; }
     private boolean confirm(String title, String body) {
