@@ -164,7 +164,7 @@
           if (!nestedAdded && !label) return;
         } else if (href && !label) {
           return;
-        } else if (!nested && href && label) {
+        } else if (!nested && href && label && title && title.parentNode) {
           var single = document.createElement("a");
           single.className = "jk-nav-link" + (isActive(item) ? " jk-nav-link--active" : "");
           single.setAttribute("href", href);
@@ -203,7 +203,6 @@
     var wrap = bar.querySelector("#jk-nav-menu");
     var btnMenu = wrap ? wrap.querySelector("#jk-toggle-menu") : null;
     var panel = wrap ? wrap.querySelector("#jk-nav-panel") : null;
-    var source = document.querySelector(".md-sidebar--primary .md-nav--primary, .md-nav--primary");
     if (!wrap) {
       wrap = document.createElement("div");
       wrap.className = "jk-nav-menu";
