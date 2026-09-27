@@ -6,3 +6,6 @@ site/
 
 # Generated guide PDFs (tools/export-guides-pdf.sh) — build artifacts
 docs/guides/*.pdf
+
+# Generated training PDFs (tools/export-training-pdf.sh) — build artifacts
+docs/training/*.pdf

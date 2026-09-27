@@ -75,6 +75,9 @@ flowchart LR
 - **Guides** — [QuickStart: minikube home lab](guides/quickstart-minikube.md),
   [user guide](guides/user-guide.md), [admin guide](guides/admin-guide.md)
   (each guide offers a printable PDF via `tools/export-guides-pdf.sh`)
+- **Training** — [course map](training/index.md): 12 модулей от Pod'а до
+  GitOps-стека с проверкой каждого шага в JKubeTerm (PDF на модуль через
+  `tools/export-training-pdf.sh`)
 
 ## Building this documentation
 

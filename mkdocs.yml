@@ -85,6 +85,20 @@ nav:
       - QuickStart — minikube home lab: guides/quickstart-minikube.md
       - User guide: guides/user-guide.md
       - Admin guide: guides/admin-guide.md
+  - Training:
+      - Course map: training/index.md
+      - 01 Basics: training/01-basics.md
+      - 02 Cluster: training/02-cluster.md
+      - 03 Access: training/03-access.md
+      - 04 Workloads I: training/04-workloads.md
+      - 05 Services & Ingress: training/05-services-ingress.md
+      - 06 Config & Storage: training/06-config-storage.md
+      - 07 Workloads II: training/07-advanced-workloads.md
+      - 08 Observability: training/08-observability.md
+      - 09 Helm & GitOps: training/09-helm-gitops.md
+      - 10 Security: training/10-security.md
+      - 11 Troubleshooting: training/11-troubleshooting.md
+      - 12 Demo apps: training/12-demo-apps.md
   - Operations:
       - Security: operations/security.md
       - Roadmap: operations/roadmap.md
