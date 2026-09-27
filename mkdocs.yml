@@ -47,9 +47,13 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
 
+extra_css:
+  - css/sidebar-toggle.css
+
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
   - js/mermaid-init.js
+  - js/sidebar-toggle.js
 
 exclude_docs: |
   models/*

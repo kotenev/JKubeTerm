@@ -1,0 +1,11 @@
+.md-sidebar--primary[hidden]{display:none}
+.md-sidebar--secondary[hidden]{display:none}
+@media screen and (min-width:60em){
+  .md-sidebar--secondary[hidden]{display:none}
+}
+.jk-side-toggle{position:fixed;right:.9rem;bottom:3.75rem;z-index:4;display:flex;flex-direction:column;gap:.45rem}
+.jk-side-toggle button{display:flex;align-items:center;gap:.45rem;background-color:var(--md-default-bg-color);color:var(--md-default-fg-color--light);border:1px solid var(--md-default-fg-color--lightest);border-radius:1.4rem;box-shadow:var(--md-shadow-z2);cursor:pointer;font-size:.68rem;line-height:1;padding:.45rem .75rem;opacity:.92}
+.jk-side-toggle button:hover{background-color:var(--md-accent-fg-color);color:var(--md-accent-bg-color);opacity:1}
+.jk-side-toggle button[aria-pressed="true"]{background-color:var(--md-primary-fg-color);color:var(--md-primary-bg-color);border-color:var(--md-primary-fg-color)}
+.jk-side-toggle button svg{fill:currentcolor;height:1rem;width:1rem}
+@media print{.jk-side-toggle{display:none}}
