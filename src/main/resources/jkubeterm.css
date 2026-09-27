@@ -1,0 +1,7 @@
+.root { -fx-font-family: 'System'; -fx-font-size: 13px; -fx-base: #243142; -fx-background: #17212d; -fx-control-inner-background: #1b2836; -fx-accent: #4d9cf7; -fx-text-fill: #e7eef8; }
+.label { -fx-text-fill: #dce8f6; }
+.button { -fx-background-radius: 5; -fx-padding: 7 11; }
+.button:hover { -fx-background-color: #365d86; }
+.text-area, .text-field, .combo-box, .table-view, .list-view { -fx-background-radius: 5; }
+.table-row-cell:selected, .list-cell:selected { -fx-background-color: #205b91; }
+.toolbar { -fx-background-color: #203044; }
