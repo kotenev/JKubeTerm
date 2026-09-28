@@ -1,7 +1,7 @@
 # External tool integration
 
 `ExternalTools` (`src/main/java/dev/jkubeterm/ExternalTools.java:9`) is the
-subprocess bridge for optional CLI tools (`kubectl`, `helm`). Its contract is
+subprocess bridge for optional CLI tools (`kubectl`, `helm`, `minikube`). Its contract is
 deliberately narrow and security-first.
 
 ## 1. Design rules
@@ -22,10 +22,11 @@ deliberately narrow and security-first.
 | Exec | `kubectl --context <name> --kubeconfig <file> --namespace <ns> exec <pod> -- <executable>` |
 | Port forward | `kubectl --context <name> --kubeconfig <file> --namespace <ns> port-forward --address 127.0.0.1 <kind>/<pod-or-svc-name> <local>:<remote>` |
 | Helm list | `helm --kube-context <name> --kubeconfig <file> --namespace <ns> list` |
+| Minikube addon enable | `minikube [-p <profile>] addons enable <addon>` (no kubeconfig pinning — the profile selects the cluster) |
 
-Both `kubectl()` and `helm()` are pure functions returning the argv list —
+`kubectl()`, `helm()` and `minikube()` are pure functions returning the argv list —
 they never start processes themselves (`ExternalTools.java:22`,
-`ExternalTools.java:26`).
+`ExternalTools.java:26`, `ExternalTools.java:30`).
 
 ## 3. Port-forward special case
 
@@ -103,6 +104,16 @@ the namespace falls back to `default` when the combo is empty
 > the flag — all statuses are listed by default, `-A/--all-namespaces` now means
 > across namespaces. JKubeTerm passes plain `list` and stays compatible with both.
 
+### minikube addons enable (300 s)
+
+One-click path via the **Addons…** button: ChoiceDialog over a curated addon
+list (ingress, metrics-server, storage-provisioner, dashboard, …), then a
+profile prompt defaulting to the connected context name, then a confirm dialog
+showing the exact `minikube -p <profile> addons enable <addon>` command.
+Runs on the worker with a 300 s timeout (addon pulls take minutes, unlike the
+30 s exec/helm calls); output lands in the console and the status line tracks
+progress. `advanceTutorial("addons")` fires on success.
+
 ## 5. Failure surface
 
 | Condition | Result |
@@ -120,6 +131,7 @@ the namespace falls back to `default` when the combo is empty
 | One-shot exec (single executable) | Interactive exec WebSocket/TTY (roadmap 2) |
 | kubectl port-forward, loopback-only, no stop UI | Port-forward manager with stop/reconnect (roadmap 3) |
 | `helm list` only | Helm install/upgrade/rollback (roadmap 5) |
+| `minikube addons enable` via Addons… dialog | Addon disable/list, `minikube start/stop` management |
 
-`kubectl` and `helm` must be on `PATH`; JKubeTerm does not bundle or download
+`kubectl`, `helm` and `minikube` must be on `PATH`; JKubeTerm does not bundle or download
 them.

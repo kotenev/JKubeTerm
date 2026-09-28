@@ -73,6 +73,7 @@ public final class JKubeTermApp extends Application {
     private Button saveButton;
     private Button newYamlButton;
     private Button diagnoseButton;
+    private Button addonsButton;
     private FlowPane actionsPane;
     private Label tutorialHint;
 
@@ -144,12 +145,13 @@ public final class JKubeTermApp extends Application {
         Button scale = new Button("Scale"); scale.setOnAction(e -> scale());
         Button restart = new Button("Restart"); restart.setOnAction(e -> restart());
         Button helm = new Button("Helm releases"); helm.setOnAction(e -> helm());
+        Button addons = new Button("Addons…"); addons.setOnAction(e -> addons());
         Button save = new Button("Save YAML…"); save.setOnAction(e -> saveYaml());
         Button newYaml = new Button("New YAML"); newYaml.setOnAction(e -> { details.setText("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: example\ndata:\n  key: value\n"); editMode.setSelected(true); advanceTutorial("new-yaml"); });
         applyButton = apply; removeButton = remove; logsButton = logs; shellButton = shell;
         forwardButton = forward; scaleButton = scale; restartButton = restart;
-        helmButton = helm; saveButton = save; newYamlButton = newYaml;
-        FlowPane actions = new FlowPane(6, 6, editMode, apply, remove, logs, shell, forward, scale, restart, helm, save, newYaml);
+        helmButton = helm; addonsButton = addons; saveButton = save; newYamlButton = newYaml;
+        FlowPane actions = new FlowPane(6, 6, editMode, apply, remove, logs, shell, forward, scale, restart, helm, addons, save, newYaml);
         actions.setPadding(new Insets(8));
         actionsPane = actions;
         VBox actionsSection = labeled("Actions", actionsPane);
@@ -897,6 +899,41 @@ public final class JKubeTermApp extends Application {
         var args = ExternalTools.helm(service.context(), namespaces.getValue() == null ? "default" : namespaces.getValue(), "list");
         task(() -> { String result = ExternalTools.run(service.context(), args, 30); Platform.runLater(() -> output(result)); });
     }
+    private void addons() {
+        List<String> known = List.of("ingress", "ingress-dns", "metrics-server", "storage-provisioner",
+            "dashboard", "headlamp", "registry", "metallb", "istio", "cert-manager");
+        ChoiceDialog<String> pick = new ChoiceDialog<>(known.getFirst(), known);
+        pick.setTitle("Minikube addons");
+        pick.setHeaderText("Enable a minikube addon with one click");
+        pick.setContentText("Addon:");
+        pick.getDialogPane().setMinWidth(420);
+        pick.showAndWait().ifPresent(addon -> {
+            TextInputDialog profile = new TextInputDialog(service == null ? "minikube" : service.context().name());
+            profile.setTitle("Minikube profile");
+            profile.setHeaderText("Profile for `minikube addons enable " + addon + "`");
+            profile.setContentText("Profile (-p):");
+            profile.showAndWait().ifPresent(name -> {
+                if (!confirm("Enable addon", "Run `minikube -p " + name.trim() + " addons enable " + addon + "`? This may take minutes.")) return;
+                output("Enabling minikube addon '" + addon + "' on profile '" + name.trim() + "'…\n");
+                status.setText("Enabling addon " + addon + "…");
+                task(() -> {
+                    // minikube does not read kubeconfig contexts; the profile (-p) selects the cluster.
+                    KubeconfigLoader.ContextRef ctx = service == null
+                        ? KubeconfigLoader.contexts(KubeconfigLoader.paths(System.getenv("KUBECONFIG"), System.getProperty("user.home"))).stream().findFirst()
+                            .orElseThrow(() -> new java.io.IOException("No kubeconfig context available"))
+                        : service.context();
+                    String result = ExternalTools.run(ctx,
+                        ExternalTools.minikube(name.trim().isEmpty() ? null : name.trim(), "addons", "enable", addon), 300);
+                    Platform.runLater(() -> {
+                        output("Addon '" + addon + "' enabled:\n" + result + "\n");
+                        status.setText("Addon " + addon + " enabled.");
+                        advanceTutorial("addons");
+                        refresh();
+                    });
+                });
+            });
+        });
+    }
     private void saveYaml() {
         if (details.getText().isBlank()) return;
         FileChooser chooser = new FileChooser(); chooser.setInitialFileName("resource.yaml");
@@ -1107,6 +1144,7 @@ public final class JKubeTermApp extends Application {
             case "scale" -> scaleButton;
             case "restart" -> restartButton;
             case "helm" -> helmButton;
+            case "addons" -> addonsButton;
             case "save" -> saveButton;
             case "newYaml" -> newYamlButton;
             case "diagnose" -> diagnoseButton;

@@ -27,4 +27,9 @@ public final class ExternalTools {
         List<String> argv = new ArrayList<>(List.of("helm", "--kube-context", context.name(), "--kubeconfig", context.file().toString(), "--namespace", namespace));
         argv.addAll(List.of(args)); return argv;
     }
+    public static List<String> minikube(String profile, String... args) {
+        List<String> argv = new ArrayList<>(List.of("minikube"));
+        if (profile != null && !profile.isBlank()) { argv.add("-p"); argv.add(profile.trim()); }
+        argv.addAll(List.of(args)); return argv;
+    }
 }

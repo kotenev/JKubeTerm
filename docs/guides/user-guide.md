@@ -139,6 +139,15 @@ Prometheus `9090:9090`, см. раздел Access map в [quickstart-minikube](q
 и выполняет через `ExternalTools.run(…, 30)`; вывод — в консоль. Это **только листинг**:
 install/upgrade/rollback делайте в терминале — `helm` обязан быть на `PATH`.
 
+## Minikube addons одной кнопкой
+
+Кнопка **Addons…** включает аддон minikube без терминала: выбор из curated-списка
+(ingress, metrics-server, storage-provisioner, dashboard, …), затем профиль
+(по умолчанию — имя подключённого контекста), затем confirm с точной командой.
+Выполняется `minikube -p <profile> addons enable <addon>` с таймаутом 300 с
+(пуллы образов занимают минуты); прогресс — в статусе, результат — в консоли,
+после успеха таблица обновляется. `minikube` обязан быть на `PATH`.
+
 ## Консоль, статус, ошибки {#console-status}
 
 - **Output / logs** (`console`): `setText()` — всегда последнее сообщение,

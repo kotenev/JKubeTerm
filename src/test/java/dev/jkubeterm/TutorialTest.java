@@ -17,8 +17,8 @@ class TutorialTest {
     }
     @Test void drillsHaveAdvanceEventsFromKnownVocabulary() {
         var known = java.util.Set.of("connect", "refresh", "select-row", "edit-mode", "new-yaml",
-            "apply", "delete", "logs", "exec", "forward");
-        for (Tutorial tour : java.util.List.of(Tutorial.firstDeploy(), Tutorial.debugFlow())) {
+            "apply", "delete", "logs", "exec", "forward", "addons");
+        for (Tutorial tour : java.util.List.of(Tutorial.firstDeploy(), Tutorial.debugFlow(), Tutorial.guidedTour())) {
             assertFalse(tour.steps().isEmpty());
             for (Tutorial.Step step : tour.steps())
                 for (String event : step.advanceOn())
@@ -28,7 +28,7 @@ class TutorialTest {
     @Test void targetIdsAreKnown() {
         var known = java.util.Set.of("contexts", "connect", "reload-contexts", "namespaces",
             "refresh", "kinds", "filter", "table", "details", "editMode", "apply", "remove",
-            "logs", "shell", "forward", "scale", "restart", "helm", "save", "newYaml",
+            "logs", "shell", "forward", "scale", "restart", "helm", "addons", "save", "newYaml",
             "diagnose", "hood", "advisor", "console", "status");
         for (Tutorial tour : java.util.List.of(Tutorial.guidedTour(), Tutorial.firstDeploy(), Tutorial.debugFlow()))
             for (Tutorial.Step step : tour.steps())

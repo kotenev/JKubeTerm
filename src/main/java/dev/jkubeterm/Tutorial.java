@@ -8,7 +8,7 @@ import java.util.List;
  * {@code JKubeTermApp.tutorialNode(String)}. Known ids:
  * contexts, connect, reload-contexts, namespaces, refresh, kinds, filter,
  * table, details, editMode, apply, remove, logs, shell, forward, scale,
- * restart, helm, save, newYaml, diagnose, hood, advisor, console, status.
+ * restart, helm, addons, save, newYaml, diagnose, hood, advisor, console, status.
  */
 public record Tutorial(String name, String doneText, List<Step> steps) {
     public record Step(String title, String body, List<String> targetIds, List<String> advanceOn) {
@@ -39,9 +39,9 @@ public record Tutorial(String name, String doneText, List<Step> steps) {
                 new Step("6 — Pod tools",
                     "Select a Pod row first. Pod logs asks for a container (last 500 lines). Exec runs one executable (30 s). Port forward binds 127.0.0.1 and lives until exit.",
                     List.of("logs", "shell", "forward"), List.of("logs")),
-                new Step("7 — Deployments and Helm",
-                    "Scale and Restart need a Deployment row. Helm releases only lists (helm list) in the current namespace. Output lands in the console below.",
-                    List.of("scale", "restart", "helm", "console"))));
+                new Step("7 — Deployments, Helm and Addons",
+                    "Scale and Restart need a Deployment row. Helm releases only lists (helm list) in the current namespace. Addons… enables a minikube addon (e.g. ingress) on the current profile with one click. Output lands in the console below.",
+                    List.of("scale", "restart", "helm", "addons", "console"))));
     }
 
     public static Tutorial firstDeploy() {
