@@ -41,7 +41,9 @@ public final class JKubeTermApp extends Application {
     private SplitPane rightPane;
     private SplitPane contentPane;
     private SplitPane bottomPane;
+    private SplitPane shelfPane;
     private VBox dockBox;
+    private VBox shelfBox;
     private AppConfig.Settings appSettings;
     private double uiZoom = 1.0;
     private String fontFamily = "System";
@@ -165,7 +167,15 @@ public final class JKubeTermApp extends Application {
         dockBox.setPadding(new Insets(4));
         ScrollPane dockScroll = new ScrollPane(dockBox);
         dockScroll.setFitToWidth(true);
-        SplitPane bottomSplit = new SplitPane(content, dockScroll);
+        shelfBox = new VBox(4, new Label("Shelf — second drop zone above the Dock"));
+        shelfBox.setPadding(new Insets(4));
+        ScrollPane shelfScroll = new ScrollPane(shelfBox);
+        shelfScroll.setFitToWidth(true);
+        SplitPane shelfSplit = new SplitPane(shelfScroll, dockScroll);
+        shelfSplit.setOrientation(javafx.geometry.Orientation.VERTICAL);
+        shelfSplit.setDividerPositions(0.5);
+        shelfPane = shelfSplit;
+        SplitPane bottomSplit = new SplitPane(content, shelfSplit);
         bottomSplit.setOrientation(javafx.geometry.Orientation.VERTICAL);
         bottomSplit.setDividerPositions(0.78);
         bottomPane = bottomSplit;
@@ -231,21 +241,13 @@ public final class JKubeTermApp extends Application {
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
         rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3());
         bottomPane.setDividerPositions(appSettings.bottomDivider());
+        shelfPane.setDividerPositions(appSettings.shelfDivider());
         for (var divider : contentPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
         for (var divider : rightPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
         for (var divider : bottomPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
-        dockScroll.setOnDragOver(drag -> {
-            if (drag.getGestureSource() != dockScroll && drag.getDragboard().hasString()) drag.acceptTransferModes(javafx.scene.input.TransferMode.MOVE);
-            drag.consume();
-        });
-        dockScroll.setOnDragDropped(drop -> {
-            String title = drop.getDragboard().hasString() ? drop.getDragboard().getString() : null;
-            VBox section = title == null ? null : findSection(title);
-            boolean done = false;
-            if (section != null) { dockSection(section); done = true; }
-            drop.setDropCompleted(done);
-            drop.consume();
-        });
+        for (var divider : shelfPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
+        dropTarget(dockScroll, dockBox);
+        dropTarget(shelfScroll, shelfBox);
         primaryStage.show();
         kinds.getSelectionModel().select(ResourceKind.PODS);
         namespaces.valueProperty().addListener((obs, old, value) -> refresh());
@@ -421,27 +423,51 @@ public final class JKubeTermApp extends Application {
             if (item instanceof VBox section && title.equals(section.getProperties().get("dockTitle"))) return section;
         for (var node : dockBox.getChildren())
             if (node instanceof VBox section && title.equals(section.getProperties().get("dockTitle"))) return section;
+        if (shelfBox != null)
+            for (var node : shelfBox.getChildren())
+                if (node instanceof VBox section && title.equals(section.getProperties().get("dockTitle"))) return section;
         return null;
+    }
+    private void dropTarget(ScrollPane scroll, VBox target) {
+        scroll.setOnDragOver(drag -> {
+            if (drag.getGestureSource() != scroll && drag.getDragboard().hasString()) drag.acceptTransferModes(javafx.scene.input.TransferMode.MOVE);
+            drag.consume();
+        });
+        scroll.setOnDragDropped(drop -> {
+            String title = drop.getDragboard().hasString() ? drop.getDragboard().getString() : null;
+            VBox section = title == null ? null : findSection(title);
+            boolean done = false;
+            if (section != null) { dockSection(section, target); done = true; }
+            drop.setDropCompleted(done);
+            drop.consume();
+        });
     }
     private void toggleDock(VBox section) {
         if (bottomPane == null || dockBox == null) return;
         String title = String.valueOf(section.getProperties().get("dockTitle"));
-        if (dockBox.getChildren().stream().anyMatch(n -> title.equals(n.getProperties().get("dockTitle")))) {
+        if (isDocked(title, dockBox) || isDocked(title, shelfBox)) {
             dockBox.getChildren().removeIf(n -> title.equals(n.getProperties().get("dockTitle")));
+            shelfBox.getChildren().removeIf(n -> title.equals(n.getProperties().get("dockTitle")));
             restoreSection(section);
         } else {
-            dockSection(section);
+            dockSection(section, dockBox);
         }
         persistSettings();
     }
-    private void dockSection(VBox section) {
+    private boolean isDocked(String title, VBox box) {
+        return box != null && box.getChildren().stream().anyMatch(n -> title.equals(n.getProperties().get("dockTitle")));
+    }
+    private void dockSection(VBox section, VBox target) {
         SplitPane host = sectionHost(section);
         if (host == null) return;
         host.getItems().remove(section);
         section.getProperties().put("dockFrom", host);
         section.getProperties().put("dockIndex", host.getItems().size());
-        dockBox.getChildren().removeIf(n -> n instanceof Label && "Dock — drag any section here by its ⋮⋮ handle".equals(((Label) n).getText()));
-        dockBox.getChildren().add(section);
+        target.getChildren().removeIf(n -> n instanceof Label);
+        target.getChildren().add(section);
+    }
+    private void dockSection(VBox section) {
+        dockSection(section, dockBox);
     }
     private void restoreSection(VBox section) {
         Object from = section.getProperties().get("dockFrom");
@@ -513,20 +539,22 @@ public final class JKubeTermApp extends Application {
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
         rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3());
         bottomPane.setDividerPositions(appSettings.bottomDivider());
+        shelfPane.setDividerPositions(appSettings.shelfDivider());
         if (stage.getScene() != null) applyFontAndZoom(stage.getScene());
         persistSettings();
     }
     private void persistSettings() {
-        if (stage == null || stage.getScene() == null || contentPane == null || rightPane == null || bottomPane == null) return;
+        if (stage == null || stage.getScene() == null || contentPane == null || rightPane == null || bottomPane == null || shelfPane == null) return;
         double[] main = contentPane.getDividerPositions();
         double[] right = rightPane.getDividerPositions();
         double[] bottom = bottomPane.getDividerPositions();
+        double[] shelf = shelfPane.getDividerPositions();
         AppConfig.Settings next = new AppConfig.Settings(
             stage.getWidth(), stage.getHeight(),
             main.length > 0 ? main[0] : 0.15, main.length > 1 ? main[1] : 0.55,
             right.length > 0 ? right[0] : 0.34, right.length > 1 ? right[1] : 0.52,
             right.length > 2 ? right[2] : 0.68, right.length > 3 ? right[3] : 0.82,
-            bottom.length > 0 ? bottom[0] : 0.78,
+            bottom.length > 0 ? bottom[0] : 0.78, shelf.length > 0 ? shelf[0] : 0.5,
             fontFamily, fontSize, uiZoom);
         try {
             AppConfig.save(next);
