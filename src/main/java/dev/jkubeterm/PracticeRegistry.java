@@ -126,7 +126,6 @@ public final class PracticeRegistry {
                 version = "";
                 section = "header";
             } else if (line.startsWith("Stable:")) {
-            } else if (line.startsWith("Stable:")) {
                 stable = line.substring("Stable:".length()).trim();
                 inDocs = false;
                 section = null;
