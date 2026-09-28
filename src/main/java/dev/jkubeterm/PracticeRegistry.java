@@ -123,7 +123,7 @@ public final class PracticeRegistry {
                 section = null;
                 inDocs = false;
             } else if (version == null) {
-                // header — skip
+                continue; // header — skip
             } else if (line.startsWith("Stable:")) {
                 stable = line.substring("Stable:".length()).trim();
                 inDocs = false;
@@ -164,7 +164,7 @@ public final class PracticeRegistry {
         for (String rawLine : text.split("\n", -1)) {
             String line = rawLine.stripTrailing();
             if (line.startsWith("## practice ")) {
-                if (id != null && title != null) practices.add(build(id, kinds, severity, title, docs, why, fix, false));
+                if (id != null && title != null) practices.add(build(id, kinds, severity, title, docs, why, fix));
                 id = line.substring("## practice ".length()).trim();
                 kinds = null;
                 severity = "INFO";
@@ -175,7 +175,7 @@ public final class PracticeRegistry {
                 section = null;
                 inDocs = false;
             } else if (id == null) {
-                // header or blank — skip
+                continue; // header or blank — skip
             } else if (line.equals("### Why")) {
                 section = "why";
                 inDocs = false;
@@ -204,12 +204,12 @@ public final class PracticeRegistry {
                 fix.append(line).append('\n');
             }
         }
-        if (id != null && title != null) practices.add(build(id, kinds, severity, title, docs, why, fix, false));
+        if (id != null && title != null) practices.add(build(id, kinds, severity, title, docs, why, fix));
         return practices;
     }
 
     private static Practice build(String id, String kinds, String severity, String title,
-                                  List<String> docs, StringBuilder why, StringBuilder fix, boolean builtin) {
+                                  List<String> docs, StringBuilder why, StringBuilder fix) {
         Set<String> kindSet = new TreeSet<>();
         if (kinds != null && !kinds.isBlank() && !kinds.trim().equals("*"))
             for (String kind : kinds.split(",")) {
@@ -223,7 +223,7 @@ public final class PracticeRegistry {
             level = ClusterAdvisor.Severity.INFO;
         }
         return new Practice(id, Set.copyOf(kindSet), level, title, List.copyOf(docs),
-            why.toString().strip(), fix.toString().strip(), builtin);
+            why.toString().strip(), fix.toString().strip(), false);
     }
 
     static String format(List<Practice> practices) {

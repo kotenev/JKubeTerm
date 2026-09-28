@@ -41,9 +41,14 @@ deployments), **First deploy drill** (шаблон → правка → namespac
 выбранного объекта рассказывает, какие контроллеры им занимаются, а «Best
 practices» показывает все wiki-практики вида: красные/жёлтые — нарушения,
 зелёные — проходящие; каждая карточка с Fix-подсказкой и кликабельной
-doc-ссылкой на kubernetes.io). Реестр практик — Markdown-база
-(`Practices Wiki…` в Help: просмотр, правление `~/.jkubeterm/practices.md`,
-Reload без перезапуска). Строки Object view кликабельны (`?` — помощь по
+doc-ссылкой на kubernetes.io). Best practices свёрнуты в два компактных
+TitledPane (⚠️ Issues / ✓ Passing): однострочные кликабельные карточки
+`[check-id] заголовок` открывают wiki-диалог (дабл-клик тоже).
+Реестр практик — Markdown-база (`Practices Wiki…` в Help: просмотр, правление
+`~/.jkubeterm/practices.md`, Reload без перезапуска). Правая колонка — SplitPane
+с разделителями (Manifest / Object / Under the hood / Best practices / Output),
+позиции и размер окна хранятся в `~/.jkubeterm/config.properties`; меню Settings:
+Font (семейство + размер), Zoom in/out/reset (⌘+/⌘-/⌘0), Reset layout. Строки Object view кликабельны (`?` — помощь по
 атрибуту со ссылкой на доку, `⤓` — экспорт PEM). «What's new in Kubernetes…»
 показывает новинки версии сервера.
 

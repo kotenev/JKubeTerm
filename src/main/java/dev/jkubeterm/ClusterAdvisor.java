@@ -84,10 +84,6 @@ public final class ClusterAdvisor {
                     practice.fix().isEmpty() ? "See the linked docs for the recommended setup." : practice.fix(), practice.docs()));
     }
 
-    private static void registryBacked(HasMetadata resource, List<Finding> findings, List<PracticeRegistry.Practice> registry) {
-        registryBackfill(resource, findings, registry);
-    }
-
     static void versionChecks(HasMetadata resource, List<Finding> findings,
                               List<PracticeRegistry.Practice> registry, String serverVersion) {
         int[] parsed = parseVersion(serverVersion);

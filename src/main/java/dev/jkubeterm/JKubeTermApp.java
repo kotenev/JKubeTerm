@@ -38,6 +38,12 @@ public final class JKubeTermApp extends Application {
     private final VBox advisorBox = new VBox(4);
     private final Label hoodText = new Label("Select a resource to see what happens under the hood.");
     private final Label catalogHint = new Label();
+    private SplitPane rightPane;
+    private SplitPane contentPane;
+    private AppConfig.Settings appSettings;
+    private double uiZoom = 1.0;
+    private String fontFamily = "System";
+    private double fontSize = 13.0;
     private final java.util.Map<TreeItem<String>, ResourceInspector.ExportableEntry> exportableNodes = new java.util.WeakHashMap<>();
     private final java.util.Map<TreeItem<String>, DrillDown.Target> drillNodes = new java.util.WeakHashMap<>();
     private final java.util.Map<TreeItem<String>, RowHelp> rowHelpNodes = new java.util.WeakHashMap<>();
@@ -140,11 +146,23 @@ public final class JKubeTermApp extends Application {
         FlowPane actions = new FlowPane(6, 6, editMode, apply, remove, logs, shell, forward, scale, restart, helm, save, newYaml);
         actions.setPadding(new Insets(8));
         actionsPane = actions;
-        VBox right = new VBox(8, actions, new Label("Manifest"), details, new Label("Object"), objectView, new Label("Under the hood"), hoodBox, new Label("Best practices"), advisorBox, new Label("Output / logs"), console);
-        VBox.setVgrow(details, Priority.ALWAYS); VBox.setVgrow(objectView, Priority.ALWAYS); VBox.setVgrow(console, Priority.ALWAYS);
-        details.setPrefRowCount(8); objectView.setPrefHeight(180); console.setPrefRowCount(6);
+        VBox right = new VBox(8, actions,
+            new Label("Manifest"), new ScrollPane(details),
+            new Label("Object"), objectView,
+            new Label("Under the hood"), new ScrollPane(hoodBox),
+            new Label("Best practices"), new ScrollPane(advisorBox),
+            new Label("Output / logs"), new ScrollPane(console));
+        for (var child : right.getChildren())
+            if (child instanceof ScrollPane scroll) { scroll.setFitToWidth(true); scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED); }
+        SplitPane rightSplit = new SplitPane(
+            sectionPane(right, 0, 1), sectionPane(right, 2, 3), sectionPane(right, 4, 5),
+            sectionPane(right, 6, 7), sectionPane(right, 8, 9));
+        rightSplit.setOrientation(javafx.geometry.Orientation.VERTICAL);
+        rightSplit.setDividerPositions(0.34, 0.52, 0.68, 0.82);
+        rightPane = rightSplit;
         VBox middle = new VBox(8, catalogHint, filter, table); VBox.setVgrow(table, Priority.ALWAYS);
-        SplitPane content = new SplitPane(kinds, middle, right); content.setDividerPositions(.15, .55);
+        SplitPane content = new SplitPane(kinds, middle, rightSplit); content.setDividerPositions(.15, .55);
+        contentPane = content;
         table.setRowFactory(view -> {
             TableRow<HasMetadata> row = new TableRow<>();
             row.setOnMouseClicked(click -> {
@@ -173,7 +191,14 @@ public final class JKubeTermApp extends Application {
         MenuItem debugFlow = new MenuItem("Debug flow drill"); debugFlow.setOnAction(e -> startTutorial(Tutorial.debugFlow()));
         MenuItem stopTutorial = new MenuItem("Stop tutorial"); stopTutorial.setOnAction(e -> stopTutorial());
         tutorialMenu.getItems().addAll(guidedTour, firstDeploy, debugFlow, new SeparatorMenuItem(), stopTutorial);
-        MenuBar menuBar = new MenuBar(helpMenu, tutorialMenu); menuBar.setUseSystemMenuBar(true);
+        Menu settingsMenu = new Menu("Settings");
+        MenuItem fontItem = new MenuItem("Font…"); fontItem.setOnAction(e -> openFontDialog());
+        MenuItem zoomIn = new MenuItem("Zoom in"); zoomIn.setOnAction(e -> setUiZoom(uiZoom + 0.1));
+        MenuItem zoomOut = new MenuItem("Zoom out"); zoomOut.setOnAction(e -> setUiZoom(uiZoom - 0.1));
+        MenuItem zoomReset = new MenuItem("Reset zoom (100%)"); zoomReset.setOnAction(e -> setUiZoom(1.0));
+        MenuItem resetLayout = new MenuItem("Reset layout"); resetLayout.setOnAction(e -> resetLayout());
+        settingsMenu.getItems().addAll(fontItem, new SeparatorMenuItem(), zoomIn, zoomOut, zoomReset, new SeparatorMenuItem(), resetLayout);
+        MenuBar menuBar = new MenuBar(helpMenu, tutorialMenu, settingsMenu); menuBar.setUseSystemMenuBar(true);
         tutorialHint = new Label();
         tutorialHint.setWrapText(true);
         tutorialHint.setVisible(false);
@@ -182,7 +207,26 @@ public final class JKubeTermApp extends Application {
         BorderPane root = new BorderPane(content, new VBox(menuBar, top, tutorialHint), null, new HBox(8, new Label("JKubeTerm 0.1"), status), null);
         root.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/jkubeterm.css")).toExternalForm());
         Scene scene = new Scene(root, 1380, 840);
-        primaryStage.setTitle("JKubeTerm — Kubernetes Desktop"); primaryStage.setScene(scene); primaryStage.show();
+        appSettings = AppConfig.load();
+        fontFamily = appSettings.fontFamily();
+        fontSize = appSettings.fontSize();
+        uiZoom = appSettings.uiZoom();
+        applyFontAndZoom(scene);
+        scene.setOnKeyPressed(keys -> {
+            if (keys.isShortcutDown() && "+".equals(keys.getText())) setUiZoom(uiZoom + 0.1);
+            else if (keys.isShortcutDown() && "-".equals(keys.getText())) setUiZoom(uiZoom - 0.1);
+            else if (keys.isShortcutDown() && "0".equals(keys.getText())) setUiZoom(1.0);
+        });
+        primaryStage.setTitle("JKubeTerm — Kubernetes Desktop"); primaryStage.setScene(scene);
+        primaryStage.setWidth(appSettings.windowWidth());
+        primaryStage.setHeight(appSettings.windowHeight());
+        primaryStage.widthProperty().addListener((obs, old, value) -> persistSettings());
+        primaryStage.heightProperty().addListener((obs, old, value) -> persistSettings());
+        contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
+        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), 0.82);
+        for (var divider : contentPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
+        for (var divider : rightPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
+        primaryStage.show();
         kinds.getSelectionModel().select(ResourceKind.PODS);
         namespaces.valueProperty().addListener((obs, old, value) -> refresh());
         loadContexts();
@@ -332,6 +376,74 @@ public final class JKubeTermApp extends Application {
         }
         help("Attribute: " + rowHelp.field() + " (" + rowHelp.kind() + ")", rowHelp.field() + " = " + rowHelp.value() + "\n\n" + help);
     }
+    private VBox sectionPane(VBox right, int labelIndex, int bodyIndex) {
+        VBox section = new VBox(4, (Node) right.getChildren().get(labelIndex), (Node) right.getChildren().get(bodyIndex));
+        VBox.setVgrow(section.getChildren().get(1), Priority.ALWAYS);
+        return section;
+    }
+    private void applyFontAndZoom(Scene scene) {
+        javafx.scene.Parent root = scene.getRoot();
+        root.setStyle("-fx-font-family: '" + fontFamily.replace("'", "") + "'; -fx-font-size: " + fontSize + "px;");
+        root.setScaleX(uiZoom);
+        root.setScaleY(uiZoom);
+    }
+    private void setUiZoom(double zoom) {
+        uiZoom = Math.min(AppConfig.MAX_ZOOM, Math.max(AppConfig.MIN_ZOOM, Math.round(zoom * 10.0) / 10.0));
+        Scene scene = stage.getScene();
+        if (scene != null && scene.getRoot() != null) {
+            scene.getRoot().setScaleX(uiZoom);
+            scene.getRoot().setScaleY(uiZoom);
+        }
+        status.setText("UI zoom " + Math.round(uiZoom * 100) + "% (⌘+/⌘-/⌘0).");
+        persistSettings();
+    }
+    private void openFontDialog() {
+        ChoiceDialog<String> family = new ChoiceDialog<>(fontFamily,
+            javafx.scene.text.Font.getFamilies().stream().sorted().limit(60).toList());
+        family.setTitle("Font");
+        family.setHeaderText("UI font family");
+        family.setContentText("Family:");
+        family.showAndWait().ifPresent(name -> {
+            fontFamily = name;
+            TextInputDialog size = new TextInputDialog(String.valueOf(fontSize));
+            size.setTitle("Font");
+            size.setHeaderText("UI font size (" + (int) AppConfig.MIN_FONT + "–" + (int) AppConfig.MAX_FONT + " pt)");
+            size.setContentText("Size:");
+            size.showAndWait().ifPresent(raw -> {
+                try {
+                    double parsed = Double.parseDouble(raw.trim());
+                    fontSize = Math.min(AppConfig.MAX_FONT, Math.max(AppConfig.MIN_FONT, parsed));
+                } catch (NumberFormatException ignored) { /* keep previous */ }
+                if (stage.getScene() != null) applyFontAndZoom(stage.getScene());
+                persistSettings();
+            });
+        });
+    }
+    private void resetLayout() {
+        appSettings = AppConfig.Settings.defaults();
+        fontFamily = appSettings.fontFamily();
+        fontSize = appSettings.fontSize();
+        setUiZoom(1.0);
+        stage.setWidth(appSettings.windowWidth());
+        stage.setHeight(appSettings.windowHeight());
+        contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
+        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), 0.82);
+        if (stage.getScene() != null) applyFontAndZoom(stage.getScene());
+        persistSettings();
+    }
+    private void persistSettings() {
+        if (stage == null || stage.getScene() == null || contentPane == null || rightPane == null) return;
+        double[] main = contentPane.getDividerPositions();
+        double[] right = rightPane.getDividerPositions();
+        AppConfig.Settings next = new AppConfig.Settings(
+            stage.getWidth(), stage.getHeight(),
+            main.length > 0 ? main[0] : 0.15, main.length > 1 ? main[1] : 0.55,
+            right.length > 0 ? right[0] : 0.34, right.length > 1 ? right[1] : 0.52, right.length > 2 ? right[2] : 0.68,
+            fontFamily, fontSize, uiZoom);
+        try {
+            AppConfig.save(next);
+        } catch (Exception ignored) { /* config is best-effort */ }
+    }
     private void showHoodAndAdvice(HasMetadata item) {
         hoodBox.getChildren().clear();
         advisorBox.getChildren().clear();
@@ -346,43 +458,65 @@ public final class JKubeTermApp extends Application {
         registryNote.setWrapText(true);
         registryNote.getStyleClass().add("advisor-fix");
         advisorBox.getChildren().add(registryNote);
-        if (findings.stream().allMatch(f -> f.severity() == ClusterAdvisor.Severity.INFO)) {
-            Label ok = new Label("✓ No WARN/CRITICAL issues — green cards below are passing practices from the wiki.");
-            ok.getStyleClass().add("advisor-ok");
-            advisorBox.getChildren().add(ok);
+        long bad = findings.stream().filter(f -> f.severity() != ClusterAdvisor.Severity.INFO).count();
+        TitledPane issues = findingsCard("⚠️ Issues (" + bad + ")", findings.stream()
+            .filter(f -> f.severity() != ClusterAdvisor.Severity.INFO).toList(), bad == 0);
+        TitledPane passing = findingsCard("✓ Passing (" + (findings.size() - bad) + ")", findings.stream()
+            .filter(f -> f.severity() == ClusterAdvisor.Severity.INFO).toList(), true);
+        advisorBox.getChildren().addAll(issues, passing);
+    }
+    private TitledPane findingsCard(String title, List<ClusterAdvisor.Finding> findings, boolean collapsedDefault) {
+        VBox cards = new VBox(4);
+        if (findings.isEmpty()) {
+            Label empty = new Label("None.");
+            empty.getStyleClass().add("advisor-fix");
+            cards.getChildren().add(empty);
         }
         for (ClusterAdvisor.Finding finding : findings) {
-            HBox row = new HBox(6);
+            VBox card = new VBox(2);
+            HBox header = new HBox(6);
             Label badge = new Label(switch (finding.severity()) {
                 case CRITICAL -> "⛔";
                 case WARN -> "⚠️";
                 case INFO -> "ℹ️";
             });
-            VBox text = new VBox(2);
+            Hyperlink name = new Hyperlink("[" + finding.check() + "] " + shortTitle(finding));
+            name.setOnAction(e -> openPractice(finding.check()));
+            name.setTooltip(new Tooltip("Open in Practices Wiki"));
+            header.getChildren().addAll(badge, name);
             Label message = new Label(finding.message());
             message.setWrapText(true);
-            Label fix = new Label("Fix: " + finding.fix());
-            fix.setWrapText(true);
-            fix.getStyleClass().add("advisor-fix");
-            text.getChildren().add(message);
-            text.getChildren().add(fix);
-            if (!finding.docs().isEmpty()) {
-                String link = finding.docs().getFirst();
-                Hyperlink docs = new Hyperlink(link.length() > 72 ? link.substring(0, 72) + "…" : link);
-                docs.setOnAction(e -> getHostServices().showDocument(link));
-                docs.setTooltip(new Tooltip(link));
-                text.getChildren().add(docs);
-                if (finding.docs().size() > 1) {
-                    Label more = new Label("+" + (finding.docs().size() - 1) + " more doc links in Practices Wiki");
-                    more.getStyleClass().add("advisor-fix");
-                    text.getChildren().add(more);
-                }
-            }
-            HBox.setHgrow(text, Priority.ALWAYS);
-            row.getChildren().addAll(badge, text);
-            row.getStyleClass().add("advisor-" + finding.severity().name().toLowerCase());
-            advisorBox.getChildren().add(row);
+            card.getChildren().addAll(header, message);
+            card.getStyleClass().add("advisor-" + finding.severity().name().toLowerCase());
+            card.setOnMouseClicked(click -> { if (click.getClickCount() == 2) openPractice(finding.check()); });
+            cards.getChildren().add(card);
         }
+        TitledPane pane = new TitledPane(title, new ScrollPane(cards));
+        ((ScrollPane) pane.getContent()).setFitToWidth(true);
+        pane.setExpanded(!collapsedDefault || findings.stream().anyMatch(f -> f.severity() != ClusterAdvisor.Severity.INFO));
+        pane.setAnimated(false);
+        return pane;
+    }
+    private static String shortTitle(ClusterAdvisor.Finding finding) {
+        String message = finding.message();
+        int cut = message.indexOf(" — ");
+        if (cut < 0) cut = message.indexOf(" - ");
+        return cut < 0 ? (message.length() > 64 ? message.substring(0, 64) + "…" : message) : message.substring(0, cut);
+    }
+    private void openPractice(String checkId) {
+        PracticeRegistry.Practice practice = PracticeRegistry.byId(PracticeRegistry.cached(), checkId);
+        if (practice == null) { info("Practice '" + checkId + "' is not in the wiki registry."); return; }
+        Alert view = new Alert(Alert.AlertType.INFORMATION);
+        view.setTitle("Practice: " + practice.id());
+        view.setHeaderText("[" + practice.severity() + "] " + practice.title());
+        StringBuilder body = new StringBuilder();
+        body.append(practice.why()).append("\n\nFix: ").append(practice.fix());
+        if (!practice.docs().isEmpty()) body.append("\n\nDocs:\n").append(String.join("\n", practice.docs()));
+        view.setContentText(body.toString());
+        view.getDialogPane().setMinWidth(640);
+        ButtonType wiki = new ButtonType("Open Practices Wiki");
+        view.getButtonTypes().add(wiki);
+        view.showAndWait().ifPresent(type -> { if (type == wiki) openPracticesWiki(); });
     }
     private String hoodTextFor(HasMetadata item) {
         if (item instanceof io.fabric8.kubernetes.api.model.Pod pod) return ClusterAdvisor.explainHood(pod);
@@ -675,7 +809,8 @@ public final class JKubeTermApp extends Application {
     }
     private void openPracticesWiki() {
         List<PracticeRegistry.Practice> practices = new ArrayList<>(PracticeRegistry.cached());
-        ChoiceDialog<PracticeRegistry.Practice> pick = new ChoiceDialog<>(practices.isEmpty() ? null : practices.getFirst(), practices);
+        if (practices.isEmpty()) { info("Practices wiki is empty — check bundled practices.md on the classpath."); return; }
+        ChoiceDialog<PracticeRegistry.Practice> pick = new ChoiceDialog<>(practices.getFirst(), practices);
         pick.setTitle("Practices Wiki");
         pick.setHeaderText(practices.size() + " practices — view or edit the Markdown DB");
         pick.setContentText("Practice:");

@@ -96,7 +96,8 @@ classDiagram
 | Tutorial hint | `Label.tutorial-hint` under toolbar (hidden unless touring) | `«Tutorial i/N — title + body»`; Next/Finish advances, Exit stops and clears highlight |
 | Left | icons + `ListView<ResourceKind>` (w=180) | All 14 kinds with inline-SVG icons (`ClusterVisuals`, distinct path + color per kind); selection → `refresh()` + catalog hint |
 | Middle | catalog hint, filter `TextField` + `TableView<HasMetadata>` | Hint `Label.catalog-hint` with kind icon + one-line beginner explanation (`ClusterVisuals.explain`); columns Name / Namespace / Kind / Created; filter applies locally (lowercase `contains`) via `showItems()`; constrained flex-last-column resize; double-click / right-click «Drill down…» → `drillDown()` (targets dialog → worker `resolve` → `selectFound`); `⇄ Relations` double-click → catalog-wide `findByName` |
-| Right | Edit-mode checkbox, Apply YAML, Delete, Pod logs, Exec command, Port forward, Scale, Restart, Helm releases, Save YAML…, New YAML; manifest `TextArea`; **Object** `TreeView` (`ResourceInspector`); **Under the hood** explainer; **Best practices** findings (`ClusterAdvisor`); console `TextArea` | FlowPane of actions; `editMode.selectedProperty` toggles manifest editability; row selection loads `service.yaml(item)` + `showObject(item)` (typed sections + ⇄ Relations graph) + `showHoodAndAdvice(item)` and resets edit mode; ConfigMap PEM rows (`⤓`, `isPemCertificate`) double-click → `exportEntry()` FileChooser save |
+| Right | vertical `SplitPane` (Manifest / Object / Under the hood / Best practices / Output) | Each section is a labelled pane with its own `ScrollPane`; divider positions persist to `~/.jkubeterm/config.properties` via `AppConfig` (window size too) |
+| Best practices | two compact `TitledPane`s: ⚠️ Issues / ✓ Passing | One-line clickable cards (`[check-id] short title` → `openPractice()` wiki dialog, double-click too); passing pane collapsed by default; registry note shows wiki size + user-file path |
 | Bottom | status `Label` | Every state transition writes a status message |
 
 ### Instance state
@@ -223,7 +224,6 @@ message + Fix), or a green «no issues» label. Covered by
 advisor triggers, compliant-pod quiet, hood text).
 
 ### Practices wiki, per-kind docs, version highlights, attribute help
-
 `PracticeRegistry` (`src/main/java/dev/jkubeterm/PracticeRegistry.java:19`)
 is a Markdown wiki DB: bundled `/practices.md` (38 practices, one
 `## practice <id>` section with `Kinds/Severity/Title/Docs/### Why/### Fix`),
@@ -244,6 +244,17 @@ row field). Version-gated advisor checks (`parseVersion`, `versionChecks`):
 StatefulSet retention hints on 1.35+, Job successPolicy on 1.36+, Pod resources
 on 1.37+. Covered by `PracticeRegistryTest` (bundled size, user override,
 highlights, kind filter) and `versionGatedHighlights`.
+
+### Layout persistence and display settings
+
+`AppConfig` (`src/main/java/dev/jkubeterm/AppConfig.java:14`) persists
+`~/.jkubeterm/config.properties`: window size, main + right `SplitPane`
+dividers, font family/size (9–20 pt), UI zoom (0.7–1.8). Values clamp on load;
+malformed entries fall back to defaults. Settings menu: **Font…** (family
+picker capped at 60 entries + size dialog), **Zoom in/out** (⌘+/⌘-/⌘0
+shortcuts too), **Reset layout** (defaults + persist). Dividers and window
+size persist live on every move/resize. Covered by `AppConfigTest`
+(defaults, malformed fallback, clamps, round-trip).
 
 ## 3. `KubernetesService` — Fabric8 facade
 
