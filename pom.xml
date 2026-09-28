@@ -13,7 +13,7 @@
   <build><plugins>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version></plugin>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.5.2</version><configuration><useModulePath>false</useModulePath><argLine>-Dorg.slf4j.simpleLogger.defaultLogLevel=warn --sun-misc-unsafe-memory-access=allow</argLine></configuration></plugin>
-    <plugin><groupId>org.openjfx</groupId><artifactId>javafx-maven-plugin</artifactId><version>0.0.8</version><configuration><mainClass>dev.jkubeterm.JKubeTermApp</mainClass></configuration></plugin>
+    <plugin><groupId>org.openjfx</groupId><artifactId>javafx-maven-plugin</artifactId><version>0.0.8</version><configuration><mainClass>dev.jkubeterm.JKubeTermApp</mainClass><options><option>--enable-native-access=javafx.graphics</option><option>--sun-misc-unsafe-memory-access=allow</option><option>-Dorg.slf4j.simpleLogger.defaultLogLevel=warn</option></options></configuration></plugin>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.8.1</version></plugin>
   </plugins></build>
 </project>
