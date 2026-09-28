@@ -466,9 +466,6 @@ public final class JKubeTermApp extends Application {
         target.getChildren().removeIf(n -> n instanceof Label);
         target.getChildren().add(section);
     }
-    private void dockSection(VBox section) {
-        dockSection(section, dockBox);
-    }
     private void restoreSection(VBox section) {
         Object from = section.getProperties().get("dockFrom");
         SplitPane host = rightPane;
