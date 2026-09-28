@@ -234,8 +234,12 @@ public final class JKubeTermApp extends Application {
             else if (keys.isShortcutDown() && "0".equals(keys.getText())) setUiZoom(1.0);
         });
         primaryStage.setTitle("JKubeTerm — Kubernetes Desktop"); primaryStage.setScene(scene);
+        if (!Double.isNaN(appSettings.windowX())) primaryStage.setX(appSettings.windowX());
+        if (!Double.isNaN(appSettings.windowY())) primaryStage.setY(appSettings.windowY());
         primaryStage.setWidth(appSettings.windowWidth());
         primaryStage.setHeight(appSettings.windowHeight());
+        primaryStage.xProperty().addListener((obs, old, value) -> persistSettings());
+        primaryStage.yProperty().addListener((obs, old, value) -> persistSettings());
         primaryStage.widthProperty().addListener((obs, old, value) -> persistSettings());
         primaryStage.heightProperty().addListener((obs, old, value) -> persistSettings());
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
@@ -248,6 +252,7 @@ public final class JKubeTermApp extends Application {
         for (var divider : shelfPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
         dropTarget(dockScroll, dockBox);
         dropTarget(shelfScroll, shelfBox);
+        restoreDockedSections();
         primaryStage.show();
         kinds.getSelectionModel().select(ResourceKind.PODS);
         namespaces.valueProperty().addListener((obs, old, value) -> refresh());
@@ -442,6 +447,32 @@ public final class JKubeTermApp extends Application {
             drop.consume();
         });
     }
+    private void restoreDockedSections() {
+        String saved = appSettings == null ? "" : appSettings.dockedSections();
+        if (saved == null || saved.isBlank()) return;
+        for (String entry : saved.split(",")) {
+            String[] parts = entry.split(":", 2);
+            if (parts.length != 2) continue;
+            VBox section = findSection(parts[1].trim());
+            if (section == null) continue;
+            if ("shelf".equalsIgnoreCase(parts[0].trim()) && shelfBox != null) dockSection(section, shelfBox);
+            else dockSection(section, dockBox);
+        }
+    }
+    private String dockedSections() {
+        StringBuilder docked = new StringBuilder();
+        if (shelfBox != null)
+            for (var node : shelfBox.getChildren()) appendDocked(docked, "shelf", node);
+        if (dockBox != null)
+            for (var node : dockBox.getChildren()) appendDocked(docked, "dock", node);
+        return docked.toString();
+    }
+    private void appendDocked(StringBuilder docked, String zone, Node node) {
+        Object title = node.getProperties().get("dockTitle");
+        if (title == null) return;
+        if (!docked.isEmpty()) docked.append(',');
+        docked.append(zone).append(':').append(title);
+    }
     private void toggleDock(VBox section) {
         if (bottomPane == null || dockBox == null) return;
         String title = String.valueOf(section.getProperties().get("dockTitle"));
@@ -547,11 +578,12 @@ public final class JKubeTermApp extends Application {
         double[] bottom = bottomPane.getDividerPositions();
         double[] shelf = shelfPane.getDividerPositions();
         AppConfig.Settings next = new AppConfig.Settings(
-            stage.getWidth(), stage.getHeight(),
+            stage.getX(), stage.getY(), stage.getWidth(), stage.getHeight(),
             main.length > 0 ? main[0] : 0.15, main.length > 1 ? main[1] : 0.55,
             right.length > 0 ? right[0] : 0.34, right.length > 1 ? right[1] : 0.52,
             right.length > 2 ? right[2] : 0.68, right.length > 3 ? right[3] : 0.82,
             bottom.length > 0 ? bottom[0] : 0.78, shelf.length > 0 ? shelf[0] : 0.5,
+            dockedSections(),
             fontFamily, fontSize, uiZoom);
         try {
             AppConfig.save(next);

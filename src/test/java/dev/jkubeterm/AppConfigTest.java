@@ -14,7 +14,10 @@ class AppConfigTest {
         var defaults = AppConfig.Settings.defaults();
         assertEquals(1380, defaults.windowWidth());
         assertEquals(840, defaults.windowHeight());
+        assertTrue(Double.isNaN(defaults.windowX()));
+        assertTrue(Double.isNaN(defaults.windowY()));
         assertTrue(defaults.mainDivider0() < defaults.mainDivider1());
+        assertEquals("", defaults.dockedSections());
         assertEquals("System", defaults.fontFamily());
         assertEquals(13.0, defaults.fontSize());
         assertEquals(1.0, defaults.uiZoom());
@@ -26,11 +29,13 @@ class AppConfigTest {
         props.setProperty("ui.zoom", "nan");
         props.setProperty("divider.main.0", "-5");
         props.setProperty("window.width", "10");
+        props.setProperty("window.x", "oops");
         var settings = AppConfig.from(props);
         assertEquals(13.0, settings.fontSize());
         assertEquals(1.0, settings.uiZoom());
         assertTrue(settings.mainDivider0() >= 0.05);
         assertTrue(settings.windowWidth() >= 800);
+        assertTrue(Double.isNaN(settings.windowX()));
     }
 
     @Test void clampsFontAndZoom() {
@@ -43,9 +48,11 @@ class AppConfigTest {
     }
 
     @Test void saveRoundTrip(@TempDir Path dir) {
-        var settings = new AppConfig.Settings(1600, 900, 0.2, 0.6, 0.3, 0.5, 0.7, 0.82, 0.78, 0.5, "Monospaced", 15.0, 1.2);
+        var settings = new AppConfig.Settings(100, 200, 1600, 900, 0.2, 0.6, 0.3, 0.5, 0.7, 0.82, 0.78, 0.5, "dock:Output / logs", "Monospaced", 15.0, 1.2);
         Path file = dir.resolve("config.properties");
         Properties props = new Properties();
+        props.setProperty("window.x", "100");
+        props.setProperty("window.y", "200");
         props.setProperty("window.width", "1600");
         props.setProperty("window.height", "900");
         props.setProperty("divider.main.0", "0.2");
@@ -53,10 +60,13 @@ class AppConfigTest {
         props.setProperty("divider.right.0", "0.3");
         props.setProperty("divider.right.1", "0.5");
         props.setProperty("divider.right.2", "0.7");
+        props.setProperty("docked.sections", "dock:Output / logs");
         props.setProperty("font.family", "Monospaced");
         props.setProperty("font.size", "15.0");
         props.setProperty("ui.zoom", "1.2");
         var parsed = AppConfig.from(props);
+        assertEquals(settings.windowX(), parsed.windowX());
+        assertEquals(settings.dockedSections(), parsed.dockedSections());
         assertEquals(settings.windowWidth(), parsed.windowWidth());
         assertEquals(settings.fontFamily(), parsed.fontFamily());
         assertEquals(settings.uiZoom(), parsed.uiZoom());

@@ -248,10 +248,12 @@ highlights, kind filter) and `versionGatedHighlights`.
 
 ### Layout persistence and display settings
 
-`AppConfig` (`src/main/java/dev/jkubeterm/AppConfig.java:14`) persists
-`~/.jkubeterm/config.properties`: window size, main + right `SplitPane`
-dividers, font family/size (9–20 pt), UI zoom (0.7–1.8). Values clamp on load;
-malformed entries fall back to defaults. Settings menu: **Font…** (family
+`AppConfig` (`src/main/java/dev/jkubeterm/AppConfig.java:15`) persists
+`~/.jkubeterm/config.properties`: window x/y/width/height, main + right +
+bottom + shelf `SplitPane` dividers, docked sections (`docked.sections` as
+`zone:Title` pairs for Shelf/Dock, restored on start via `restoreDockedSections`),
+font family/size (9–20 pt), UI zoom (0.7–1.8). Values clamp on load;
+malformed entries fall back to defaults (NaN window position = OS placement). Settings menu: **Font…** (family
 picker capped at 60 entries + size dialog), **Zoom in/out** (⌘+/⌘-/⌘0
 shortcuts too), **Reset layout** (defaults + persist). Dividers and window
 size persist live on every move/resize. Covered by `AppConfigTest`

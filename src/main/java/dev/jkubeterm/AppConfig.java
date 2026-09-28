@@ -21,13 +21,14 @@ public final class AppConfig {
     public static final double MAX_ZOOM = 1.8;
     private static final double DEFAULT_FONT = 13.0;
 
-    public record Settings(double windowWidth, double windowHeight,
+    public record Settings(double windowX, double windowY, double windowWidth, double windowHeight,
                            double mainDivider0, double mainDivider1,
                            double rightDivider0, double rightDivider1, double rightDivider2, double rightDivider3,
                            double bottomDivider, double shelfDivider,
+                           String dockedSections,
                            String fontFamily, double fontSize, double uiZoom) {
         public static Settings defaults() {
-            return new Settings(1380, 840, 0.15, 0.55, 0.34, 0.52, 0.68, 0.82, 0.78, 0.5, "System", DEFAULT_FONT, 1.0);
+            return new Settings(Double.NaN, Double.NaN, 1380, 840, 0.15, 0.55, 0.34, 0.52, 0.68, 0.82, 0.78, 0.5, "", "System", DEFAULT_FONT, 1.0);
         }
     }
 
@@ -50,6 +51,8 @@ public final class AppConfig {
         Path file = configFile();
         Files.createDirectories(file.getParent());
         Properties props = new Properties();
+        props.setProperty("window.x", coordinate(settings.windowX()));
+        props.setProperty("window.y", coordinate(settings.windowY()));
         props.setProperty("window.width", Double.toString(settings.windowWidth()));
         props.setProperty("window.height", Double.toString(settings.windowHeight()));
         props.setProperty("divider.main.0", Double.toString(settings.mainDivider0()));
@@ -60,6 +63,7 @@ public final class AppConfig {
         props.setProperty("divider.right.3", Double.toString(settings.rightDivider3()));
         props.setProperty("divider.bottom", Double.toString(settings.bottomDivider()));
         props.setProperty("divider.shelf", Double.toString(settings.shelfDivider()));
+        props.setProperty("docked.sections", settings.dockedSections() == null ? "" : settings.dockedSections());
         props.setProperty("font.family", settings.fontFamily());
         props.setProperty("font.size", Double.toString(settings.fontSize()));
         props.setProperty("ui.zoom", Double.toString(settings.uiZoom()));
@@ -71,6 +75,8 @@ public final class AppConfig {
     static Settings from(Properties props) {
         Settings defaults = Settings.defaults();
         return new Settings(
+            coordinate(props, "window.x", defaults.windowX()),
+            coordinate(props, "window.y", defaults.windowY()),
             clampDouble(props, "window.width", defaults.windowWidth(), 800, 3840),
             clampDouble(props, "window.height", defaults.windowHeight(), 500, 2160),
             clamp01(props, "divider.main.0", defaults.mainDivider0()),
@@ -81,9 +87,26 @@ public final class AppConfig {
             clamp01(props, "divider.right.3", defaults.rightDivider3()),
             clamp01(props, "divider.bottom", defaults.bottomDivider()),
             clamp01(props, "divider.shelf", defaults.shelfDivider()),
+            props.getProperty("docked.sections", defaults.dockedSections()),
             fontFamily(props.getProperty("font.family", defaults.fontFamily())),
             clampDouble(props, "font.size", defaults.fontSize(), MIN_FONT, MAX_FONT),
             clampDouble(props, "ui.zoom", defaults.uiZoom(), MIN_ZOOM, MAX_ZOOM));
+    }
+
+    private static String coordinate(double value) {
+        return Double.isNaN(value) ? "" : Double.toString(value);
+    }
+
+    private static double coordinate(Properties props, String key, double fallback) {
+        String raw = props.getProperty(key, "");
+        if (raw == null || raw.isBlank()) return fallback;
+        try {
+            double value = Double.parseDouble(raw.trim());
+            if (Double.isNaN(value)) return fallback;
+            return Math.clamp(value, -3840, 3840);
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 
     private static double clampDouble(Properties props, String key, double fallback, double min, double max) {
