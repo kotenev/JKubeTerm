@@ -56,7 +56,6 @@ public final class JKubeTermApp extends Application {
     private final Label status = new Label("Choose a context");
     private final ProgressBar taskProgress = new ProgressBar();
     private final Label taskEta = new Label();
-    private volatile java.util.concurrent.Future<?> runningAddon;
     private final java.util.concurrent.atomic.AtomicBoolean addonCancelled = new java.util.concurrent.atomic.AtomicBoolean(false);
     private final TextField filter = new TextField();
     private final CheckBox editMode = new CheckBox("Edit YAML");
@@ -929,18 +928,18 @@ public final class JKubeTermApp extends Application {
                 long started = System.nanoTime();
                 // Dynamic ETA: phase weights learned from typical addon installs
                 // (pull ~45%, verify ~25%, enable ~30%). Progress advances per output line matched to a phase.
-                taskStarted("Enabling addon " + addon + "…", true, () -> {
+                taskStarted("Enabling addon " + addon + "…", () -> {
                     addonCancelled.set(true);
                     output(transcript + "…cancelling on user request.\n");
                 });
-                runningAddon = worker.submit(() -> {
+                runningAddonSubmit(() -> {
                     try {
                         KubeconfigLoader.ContextRef ctx = service == null
                             ? KubeconfigLoader.contexts(KubeconfigLoader.paths(System.getenv("KUBECONFIG"), System.getProperty("user.home"))).stream().findFirst()
                                 .orElseThrow(() -> new java.io.IOException("No kubeconfig context available"))
                             : service.context();
                         output(transcript + "context=" + ctx.name() + " kubeconfig=" + ctx.file() + "\n");
-                        String result = ExternalTools.runStreaming(ctx, argv, 600,
+                        ExternalTools.runStreaming(ctx, argv, 600,
                             line -> {
                                 transcript.append(line).append('\n');
                                 Platform.runLater(() -> {
@@ -969,6 +968,7 @@ public final class JKubeTermApp extends Application {
             });
         });
     }
+    private void runningAddonSubmit(Runnable body) { worker.submit(() -> { try { body.run(); } catch (Exception e) { Platform.runLater(() -> error("Kubernetes operation failed", e)); } }); }
     static String elapsedOf(long startedNanos) {
         long seconds = (System.nanoTime() - startedNanos) / 1_000_000_000L;
         return seconds + "s";
@@ -1204,14 +1204,14 @@ public final class JKubeTermApp extends Application {
         bar.setPadding(new Insets(4, 8, 4, 8));
         return bar;
     }
-    private void taskStarted(String label, boolean cancellable, Runnable onCancel) {
+    private void taskStarted(String label, Runnable onCancel) {
         Platform.runLater(() -> {
             status.setText(label);
             taskProgress.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
             taskProgress.setVisible(true);
             taskEta.setText("starting…");
-            pendingCancel = cancellable ? onCancel : null;
-            cancelButton().setVisible(cancellable);
+            pendingCancel = onCancel;
+            cancelButton().setVisible(true);
         });
     }
     private Button cancelTaskButton;

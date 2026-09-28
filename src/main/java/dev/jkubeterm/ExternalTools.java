@@ -32,10 +32,7 @@ public final class ExternalTools {
             String line;
             while ((line = reader.readLine()) != null) {
                 collected.append(line).append('\n');
-                if (sink != null) {
-                    String snapshot = line;
-                    sink.accept(snapshot);
-                }
+                if (sink != null) sink.accept(line);
                 if (cancelled != null && cancelled.getAsBoolean()) {
                     process.destroyForcibly();
                     throw new IOException("Cancelled by user after " + elapsedOf(started));

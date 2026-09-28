@@ -23,7 +23,7 @@ public final class AddonPhases {
         Pattern.compile("(?i)kubernetes.*version|cluster.*(info|status)"));
     private static final List<Pattern> ENABLE = List.of(
         Pattern.compile("(?i)\\benabl(e|ing|ed)\\b|creat|apply|deploy|start|launch|configur|restart|\\bcheck\\b"),
-        Pattern.compile("\\*\u2764?\\s*(Verifying|Enabling|Starting|Creating|Using|Preparing)"));
+        Pattern.compile("\\*❤?\\s*(Verifying|Enabling|Starting|Creating|Using|Preparing)"));
 
     public enum Phase { IDLE, PULL, VERIFY, ENABLE, DONE }
 
