@@ -8,7 +8,6 @@ import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.Volume;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -141,12 +140,12 @@ public final class DrillDown {
             }
             case io.fabric8.kubernetes.api.model.ConfigMap ignored ->
                 targets.add(Target.usedBy("Workloads using this ConfigMap", "Pods, Deployments, StatefulSets, DaemonSets and Jobs referencing this ConfigMap.", ns, "configmap", name));
-            case io.fabric8.kubernetes.api.model.batch.v1.Job job -> {
+            case io.fabric8.kubernetes.api.model.batch.v1.Job ignored -> {
                 targets.add(Target.byLabels("Pods of this Job", "Pods labelled job-name=" + name + ".", ResourceKind.PODS, ns, Map.of("job-name", name)));
                 targets.add(Target.about("Events about this Job", "Events whose involved object is this Job.",
                     ResourceKind.EVENTS, ns, "Job", name));
             }
-            case io.fabric8.kubernetes.api.model.batch.v1.CronJob cron -> {
+            case io.fabric8.kubernetes.api.model.batch.v1.CronJob ignored -> {
                 targets.add(Target.ownedBy("Jobs of this CronJob", "Jobs owned by this CronJob.", ResourceKind.JOBS, ns, name));
                 targets.add(Target.about("Events about this CronJob", "Events whose involved object is this CronJob.",
                     ResourceKind.EVENTS, ns, "CronJob", name));
@@ -174,10 +173,9 @@ public final class DrillDown {
             case io.fabric8.kubernetes.api.model.Event event -> {
                 if (event.getInvolvedObject() != null && event.getInvolvedObject().getName() != null) {
                     String involvedKind = event.getInvolvedObject().getKind();
-                    Optional<ResourceKind> mapped = kindForKindName(involvedKind);
-                    if (mapped.isPresent())
-                        targets.add(Target.about(mapped.get().label + " '" + event.getInvolvedObject().getName() + "'",
-                            "The object this Event is about.", mapped.get(), ns, involvedKind, event.getInvolvedObject().getName()));
+                    kindForKindName(involvedKind).ifPresent(mapped ->
+                        targets.add(Target.about(mapped.label + " '" + event.getInvolvedObject().getName() + "'",
+                            "The object this Event is about.", mapped, ns, involvedKind, event.getInvolvedObject().getName())));
                 }
             }
             default -> { /* Secrets and other kinds: no drill targets */ }
@@ -409,17 +407,10 @@ public final class DrillDown {
     private static List<String> ownerNames(HasMetadata item) {
         if (item.getMetadata() == null || item.getMetadata().getOwnerReferences() == null) return List.of();
         return item.getMetadata().getOwnerReferences().stream()
-            .map(o -> o.getName()).filter(n -> n != null).toList();
+            .map(io.fabric8.kubernetes.api.model.OwnerReference::getName).filter(n -> n != null).toList();
     }
 
     private static <T> List<T> nullSafe(List<T> list) { return list == null ? List.of() : list; }
 
     private static <K, V> Map<K, V> nullSafe(Map<K, V> map) { return map == null ? Map.of() : map; }
-
-    public static Map<String, List<String>> describeTargets(HasMetadata item) {
-        Map<String, List<String>> summary = new LinkedHashMap<>();
-        for (Target target : targets(item))
-            summary.computeIfAbsent(target.mode().name(), key -> new ArrayList<>()).add(target.title());
-        return summary;
-    }
 }
