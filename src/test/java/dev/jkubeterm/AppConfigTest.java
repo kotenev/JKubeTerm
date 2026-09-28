@@ -43,7 +43,7 @@ class AppConfigTest {
     }
 
     @Test void saveRoundTrip(@TempDir Path dir) {
-        var settings = new AppConfig.Settings(1600, 900, 0.2, 0.6, 0.3, 0.5, 0.7, "Monospaced", 15.0, 1.2);
+        var settings = new AppConfig.Settings(1600, 900, 0.2, 0.6, 0.3, 0.5, 0.7, 0.82, "Monospaced", 15.0, 1.2);
         Path file = dir.resolve("config.properties");
         Properties props = new Properties();
         props.setProperty("window.width", "1600");

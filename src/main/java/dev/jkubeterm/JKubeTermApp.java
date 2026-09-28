@@ -147,16 +147,12 @@ public final class JKubeTermApp extends Application {
         actions.setPadding(new Insets(8));
         actionsPane = actions;
         VBox right = new VBox(8, actions,
-            new Label("Manifest"), new ScrollPane(details),
-            new Label("Object"), objectView,
-            new Label("Under the hood"), new ScrollPane(hoodBox),
-            new Label("Best practices"), new ScrollPane(advisorBox),
-            new Label("Output / logs"), new ScrollPane(console));
-        for (var child : right.getChildren())
-            if (child instanceof ScrollPane scroll) { scroll.setFitToWidth(true); scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED); }
-        SplitPane rightSplit = new SplitPane(
-            sectionPane(right, 0, 1), sectionPane(right, 2, 3), sectionPane(right, 4, 5),
-            sectionPane(right, 6, 7), sectionPane(right, 8, 9));
+            labeled("Manifest", details),
+            labeled("Object", objectView),
+            labeled("Under the hood", hoodBox),
+            labeled("Best practices", advisorBox),
+            labeled("Output / logs", console));
+        SplitPane rightSplit = new SplitPane(right.getChildren().toArray(new Node[0]));
         rightSplit.setOrientation(javafx.geometry.Orientation.VERTICAL);
         rightSplit.setDividerPositions(0.34, 0.52, 0.68, 0.82);
         rightPane = rightSplit;
@@ -223,7 +219,7 @@ public final class JKubeTermApp extends Application {
         primaryStage.widthProperty().addListener((obs, old, value) -> persistSettings());
         primaryStage.heightProperty().addListener((obs, old, value) -> persistSettings());
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
-        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), 0.82);
+        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3());
         for (var divider : contentPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
         for (var divider : rightPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
         primaryStage.show();
@@ -376,10 +372,19 @@ public final class JKubeTermApp extends Application {
         }
         help("Attribute: " + rowHelp.field() + " (" + rowHelp.kind() + ")", rowHelp.field() + " = " + rowHelp.value() + "\n\n" + help);
     }
-    private VBox sectionPane(VBox right, int labelIndex, int bodyIndex) {
-        VBox section = new VBox(4, right.getChildren().get(labelIndex), right.getChildren().get(bodyIndex));
+    private VBox labeled(String title, Node body) {
+        VBox section = new VBox(4, new Label(title), wrapScroll(body));
         VBox.setVgrow(section.getChildren().get(1), Priority.ALWAYS);
         return section;
+    }
+    private ScrollPane wrapScroll(Node body) {
+        if (body instanceof ScrollPane scroll) { scroll.setFitToWidth(true); return scroll; }
+        ScrollPane scroll = new ScrollPane(body);
+        scroll.setFitToWidth(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+        return scroll;
     }
     private void applyFontAndZoom(Scene scene) {
         javafx.scene.Parent root = scene.getRoot();
@@ -427,7 +432,7 @@ public final class JKubeTermApp extends Application {
         stage.setWidth(appSettings.windowWidth());
         stage.setHeight(appSettings.windowHeight());
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
-        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), 0.82);
+        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3());
         if (stage.getScene() != null) applyFontAndZoom(stage.getScene());
         persistSettings();
     }
@@ -438,7 +443,8 @@ public final class JKubeTermApp extends Application {
         AppConfig.Settings next = new AppConfig.Settings(
             stage.getWidth(), stage.getHeight(),
             main.length > 0 ? main[0] : 0.15, main.length > 1 ? main[1] : 0.55,
-            right.length > 0 ? right[0] : 0.34, right.length > 1 ? right[1] : 0.52, right.length > 2 ? right[2] : 0.68,
+            right.length > 0 ? right[0] : 0.34, right.length > 1 ? right[1] : 0.52,
+            right.length > 2 ? right[2] : 0.68, right.length > 3 ? right[3] : 0.82,
             fontFamily, fontSize, uiZoom);
         try {
             AppConfig.save(next);
