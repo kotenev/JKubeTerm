@@ -136,7 +136,7 @@ class ClusterAdvisorTest {
             .anyMatch(f -> f.check().equals("stateful-retention") && f.message().contains("1.37")));
         assertTrue(ClusterAdvisor.advise(sts, PracticeRegistry.cached(), "v1.30.0").stream()
             .filter(f -> f.check().equals("stateful-retention"))
-            .allMatch(f -> !f.message().contains("Server is Kubernetes")));
+            .noneMatch(f -> f.message().contains("Server is Kubernetes")));
         var job = new io.fabric8.kubernetes.api.model.batch.v1.JobBuilder()
             .withNewMetadata().withName("m").endMetadata()
             .withNewSpec().withNewTemplate().withNewSpec().withRestartPolicy("Never")
