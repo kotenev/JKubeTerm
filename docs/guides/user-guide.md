@@ -144,9 +144,17 @@ install/upgrade/rollback делайте в терминале — `helm` обя�
 Кнопка **Addons…** включает аддон minikube без терминала: выбор из curated-списка
 (ingress, metrics-server, storage-provisioner, dashboard, …), затем профиль
 (по умолчанию — имя подключённого контекста), затем confirm с точной командой.
-Выполняется `minikube -p <profile> addons enable <addon>` с таймаутом 300 с
-(пуллы образов занимают минуты); прогресс — в статусе, результат — в консоли,
-после успеха таблица обновляется. `minikube` обязан быть на `PATH`.
+Выполняется `minikube -p <profile> addons enable <addon>` с таймаутом 600 с
+(пуллы образов занимают минуты). Во время установки:
+
+- статус-бар показывает **progress bar с динамическим ETA** (`elapsed · ~left (timeout in…)`),
+  фазы pull → verify → enable определяются по строкам вывода (`AddonPhases`);
+- **каждая строка вывода minikube сразу дописывается в консоль** — видно, на чём висит
+  (pull образа, verify версии, enabling), плюс argv, профиль, контекст и kubeconfig в шапке;
+- кнопка **Cancel** в статус-баре убивает процесс (`destroyForcibly`, `Cancelled by user after Ns`);
+- при провале — transcript + hints (minikube на PATH? профиль существует? Docker запущен?).
+
+После успеха таблица обновляется. `minikube` обязан быть на `PATH`.
 
 ## Консоль, статус, ошибки {#console-status}
 

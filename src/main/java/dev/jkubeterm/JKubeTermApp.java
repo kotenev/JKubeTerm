@@ -54,6 +54,10 @@ public final class JKubeTermApp extends Application {
     private final java.util.Map<TreeItem<String>, DrillDown.Target> drillNodes = new java.util.WeakHashMap<>();
     private final java.util.Map<TreeItem<String>, RowHelp> rowHelpNodes = new java.util.WeakHashMap<>();
     private final Label status = new Label("Choose a context");
+    private final ProgressBar taskProgress = new ProgressBar();
+    private final Label taskEta = new Label();
+    private volatile java.util.concurrent.Future<?> runningAddon;
+    private final java.util.concurrent.atomic.AtomicBoolean addonCancelled = new java.util.concurrent.atomic.AtomicBoolean(false);
     private final TextField filter = new TextField();
     private final CheckBox editMode = new CheckBox("Edit YAML");
     private KubernetesService service;
@@ -237,7 +241,7 @@ public final class JKubeTermApp extends Application {
         tutorialHint.setVisible(false);
         tutorialHint.setManaged(false);
         tutorialHint.getStyleClass().add("tutorial-hint");
-        BorderPane root = new BorderPane(bottomSplit, new VBox(menuBar, top, tutorialHint), null, new HBox(8, new Label("JKubeTerm 0.1"), status), null);
+        BorderPane root = new BorderPane(bottomSplit, new VBox(menuBar, top, tutorialHint), null, statusBar(), null);
         root.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/jkubeterm.css")).toExternalForm());
         Scene scene = new Scene(root, 1380, 840);
         appSettings = AppConfig.load();
@@ -914,25 +918,60 @@ public final class JKubeTermApp extends Application {
             profile.setContentText("Profile (-p):");
             profile.showAndWait().ifPresent(name -> {
                 if (!confirm("Enable addon", "Run `minikube -p " + name.trim() + " addons enable " + addon + "`? This may take minutes.")) return;
-                output("Enabling minikube addon '" + addon + "' on profile '" + name.trim() + "'…\n");
-                status.setText("Enabling addon " + addon + "…");
-                task(() -> {
-                    // minikube does not read kubeconfig contexts; the profile (-p) selects the cluster.
-                    KubeconfigLoader.ContextRef ctx = service == null
-                        ? KubeconfigLoader.contexts(KubeconfigLoader.paths(System.getenv("KUBECONFIG"), System.getProperty("user.home"))).stream().findFirst()
-                            .orElseThrow(() -> new java.io.IOException("No kubeconfig context available"))
-                        : service.context();
-                    String result = ExternalTools.run(ctx,
-                        ExternalTools.minikube(name.trim().isEmpty() ? null : name.trim(), "addons", "enable", addon), 300);
-                    Platform.runLater(() -> {
-                        output("Addon '" + addon + "' enabled:\n" + result + "\n");
-                        status.setText("Addon " + addon + " enabled.");
-                        advanceTutorial("addons");
-                        refresh();
-                    });
+                String profileName = name.trim().isEmpty() ? null : name.trim();
+                List<String> argv = ExternalTools.minikube(profileName, "addons", "enable", addon);
+                StringBuilder transcript = new StringBuilder();
+                transcript.append("$ ").append(String.join(" ", argv)).append('\n');
+                transcript.append("profile=").append(profileName == null ? "(default)" : profileName)
+                    .append(" addon=").append(addon).append('\n');
+                output(transcript.toString());
+                addonCancelled.set(false);
+                long started = System.nanoTime();
+                // Dynamic ETA: phase weights learned from typical addon installs
+                // (pull ~45%, verify ~25%, enable ~30%). Progress advances per output line matched to a phase.
+                taskStarted("Enabling addon " + addon + "…", true, () -> {
+                    addonCancelled.set(true);
+                    output(transcript + "…cancelling on user request.\n");
+                });
+                runningAddon = worker.submit(() -> {
+                    try {
+                        KubeconfigLoader.ContextRef ctx = service == null
+                            ? KubeconfigLoader.contexts(KubeconfigLoader.paths(System.getenv("KUBECONFIG"), System.getProperty("user.home"))).stream().findFirst()
+                                .orElseThrow(() -> new java.io.IOException("No kubeconfig context available"))
+                            : service.context();
+                        output(transcript + "context=" + ctx.name() + " kubeconfig=" + ctx.file() + "\n");
+                        String result = ExternalTools.runStreaming(ctx, argv, 600,
+                            line -> {
+                                transcript.append(line).append('\n');
+                                Platform.runLater(() -> {
+                                    output(transcript.toString());
+                                    double fraction = AddonPhases.fractionOf(line, transcript.toString());
+                                    taskProgress(fraction, AddonPhases.eta(fraction, started, 600));
+                                });
+                            },
+                            addonCancelled::get);
+                        Platform.runLater(() -> {
+                            output(transcript + "\nAddon '" + addon + "' enabled in " + elapsedOf(started) + ".\n");
+                            taskDone("Addon " + addon + " enabled.");
+                            advanceTutorial("addons");
+                            refresh();
+                        });
+                    } catch (Exception ex) {
+                        Platform.runLater(() -> {
+                            taskDone(null);
+                            output(transcript + "\nFAILED after " + elapsedOf(started) + ": " + ex.getMessage()
+                                + "\nHints: is minikube on PATH? profile exists (`minikube profile list`)? "
+                                + "Docker daemon running? See console transcript above.\n");
+                            error("Addon failed (" + addon + ")", ex);
+                        });
+                    }
                 });
             });
         });
+    }
+    static String elapsedOf(long startedNanos) {
+        long seconds = (System.nanoTime() - startedNanos) / 1_000_000_000L;
+        return seconds + "s";
     }
     private void saveYaml() {
         if (details.getText().isBlank()) return;
@@ -1155,6 +1194,54 @@ public final class JKubeTermApp extends Application {
     }
     private void info(String message) { Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK); alert.setHeaderText(null); alert.showAndWait(); }
     private void error(String title, Throwable ex) { status.setText(title + ": " + ex.getMessage()); Alert alert = new Alert(Alert.AlertType.ERROR, ex.getMessage() == null ? ex.toString() : ex.getMessage(), ButtonType.OK); alert.setTitle(title); alert.setHeaderText(title); alert.show(); }
+    private HBox statusBar() {
+        taskProgress.setPrefWidth(160);
+        taskProgress.setVisible(false);
+        taskProgress.setTooltip(new Tooltip("Background task progress"));
+        taskEta.getStyleClass().add("advisor-fix");
+        HBox bar = new HBox(8, new Label("JKubeTerm 0.1"), status, taskProgress, cancelButton(), taskEta);
+        cancelButton().setVisible(false);
+        bar.setPadding(new Insets(4, 8, 4, 8));
+        return bar;
+    }
+    private void taskStarted(String label, boolean cancellable, Runnable onCancel) {
+        Platform.runLater(() -> {
+            status.setText(label);
+            taskProgress.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
+            taskProgress.setVisible(true);
+            taskEta.setText("starting…");
+            pendingCancel = cancellable ? onCancel : null;
+            cancelButton().setVisible(cancellable);
+        });
+    }
+    private Button cancelTaskButton;
+    private Runnable pendingCancel;
+    private Button cancelButton() {
+        if (cancelTaskButton == null) {
+            cancelTaskButton = new Button("Cancel");
+            cancelTaskButton.setOnAction(e -> {
+                Runnable action = pendingCancel;
+                pendingCancel = null;
+                if (action != null) action.run();
+            });
+        }
+        return cancelTaskButton;
+    }
+    private void taskProgress(double fraction, String etaText) {
+        Platform.runLater(() -> {
+            taskProgress.setProgress(fraction);
+            taskEta.setText(etaText);
+        });
+    }
+    private void taskDone(String message) {
+        Platform.runLater(() -> {
+            taskProgress.setVisible(false);
+            taskEta.setText("");
+            pendingCancel = null;
+            cancelButton().setVisible(false);
+            if (message != null) status.setText(message);
+        });
+    }
     private void task(ThrowingAction action) { worker.submit(() -> { try { action.run(); } catch (Exception e) { Platform.runLater(() -> error("Kubernetes operation failed", e)); } }); }
     @FunctionalInterface private interface ThrowingAction { void run() throws Exception; }
     @Override public void stop() {

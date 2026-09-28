@@ -104,15 +104,18 @@ the namespace falls back to `default` when the combo is empty
 > the flag — all statuses are listed by default, `-A/--all-namespaces` now means
 > across namespaces. JKubeTerm passes plain `list` and stays compatible with both.
 
-### minikube addons enable (300 s)
+### minikube addons enable (600 s, streaming)
 
 One-click path via the **Addons…** button: ChoiceDialog over a curated addon
 list (ingress, metrics-server, storage-provisioner, dashboard, …), then a
 profile prompt defaulting to the connected context name, then a confirm dialog
 showing the exact `minikube -p <profile> addons enable <addon>` command.
-Runs on the worker with a 300 s timeout (addon pulls take minutes, unlike the
-30 s exec/helm calls); output lands in the console and the status line tracks
-progress. `advanceTutorial("addons")` fires on success.
+Runs on the worker via streaming `ExternalTools.runStreaming(..., 600)` —
+**every output line is appended to the console live** (plus argv/profile/context
+header), so a stuck install shows exactly where it hangs. `AddonPhases`
+maps lines to pull → verify → enable phases for a dynamic progress bar with
+ETA (`elapsed · ~left (timeout in…)`); a **Cancel** button in the status bar
+destroys the process. `advanceTutorial("addons")` fires on success.
 
 ## 5. Failure surface
 
