@@ -435,10 +435,11 @@ public final class JKubeTermApp extends Application {
         persistSettings();
     }
     private void dockSection(VBox section) {
-        VBox host = dockHost(section);
+        SplitPane host = sectionHost(section);
         if (host == null) return;
-        host.getChildren().remove(section);
+        host.getItems().remove(section);
         section.getProperties().put("dockFrom", host);
+        section.getProperties().put("dockIndex", host.getItems().size());
         dockBox.getChildren().removeIf(n -> n instanceof Label && "Dock — drag any section here by its ⋮⋮ handle".equals(((Label) n).getText()));
         dockBox.getChildren().add(section);
     }
@@ -446,11 +447,14 @@ public final class JKubeTermApp extends Application {
         Object from = section.getProperties().get("dockFrom");
         SplitPane host = rightPane;
         if (from instanceof SplitPane pane) host = pane;
-        else if (from instanceof VBox) return;
-        if (!host.getItems().contains(section)) host.getItems().add(section);
+        if (!host.getItems().contains(section)) {
+            Object index = section.getProperties().get("dockIndex");
+            int at = index instanceof Integer i ? Math.min(i, host.getItems().size()) : host.getItems().size();
+            host.getItems().add(at, section);
+        }
     }
-    private VBox dockHost(VBox section) {
-        if (section.getParent() instanceof VBox host) return host;
+    private SplitPane sectionHost(VBox section) {
+        if (rightPane != null && rightPane.getItems().contains(section)) return rightPane;
         return null;
     }
     private ScrollPane wrapScroll(Node body) {
