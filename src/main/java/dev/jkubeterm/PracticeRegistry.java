@@ -113,7 +113,7 @@ public final class PracticeRegistry {
         for (String rawLine : text.split("\n", -1)) {
             String line = rawLine.stripTrailing();
             if (line.startsWith("## ")) {
-                if (version != null) highlights.add(new Highlight(version, stable == null ? "" : stable,
+                if (version != null && !version.isEmpty()) highlights.add(new Highlight(version, stable == null ? "" : stable,
                     List.copyOf(docs), lab.toString().strip(), fix.toString().strip()));
                 version = line.substring(3).trim();
                 stable = null;
@@ -123,7 +123,9 @@ public final class PracticeRegistry {
                 section = null;
                 inDocs = false;
             } else if (version == null) {
-                continue; // header — skip
+                version = "";
+                section = "header";
+            } else if (line.startsWith("Stable:")) {
             } else if (line.startsWith("Stable:")) {
                 stable = line.substring("Stable:".length()).trim();
                 inDocs = false;
@@ -143,9 +145,11 @@ public final class PracticeRegistry {
                 lab.append(line).append('\n');
             } else if ("fix".equals(section)) {
                 fix.append(line).append('\n');
+            } else if (!"header".equals(section)) {
+                lab.append(line).append('\n');
             }
         }
-        if (version != null) highlights.add(new Highlight(version, stable == null ? "" : stable,
+        if (version != null && !version.isEmpty() && !"header".equals(section)) highlights.add(new Highlight(version, stable == null ? "" : stable,
             List.copyOf(docs), lab.toString().strip(), fix.toString().strip()));
         return highlights;
     }
@@ -174,8 +178,11 @@ public final class PracticeRegistry {
                 fix = new StringBuilder();
                 section = null;
                 inDocs = false;
+            } else if (id == null && line.isBlank()) {
+                section = "header";
             } else if (id == null) {
-                continue; // header or blank — skip
+                section = "header";
+                why.append(line).append('\n');
             } else if (line.equals("### Why")) {
                 section = "why";
                 inDocs = false;

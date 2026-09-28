@@ -87,7 +87,7 @@ public final class AppConfig {
             return fallback;
         }
         if (Double.isNaN(value)) return fallback;
-        return Math.min(max, Math.max(min, value));
+        return Math.clamp(value, min, max);
     }
 
     private static double clamp01(Properties props, String key, double fallback) {

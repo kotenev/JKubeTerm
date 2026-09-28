@@ -377,7 +377,7 @@ public final class JKubeTermApp extends Application {
         help("Attribute: " + rowHelp.field() + " (" + rowHelp.kind() + ")", rowHelp.field() + " = " + rowHelp.value() + "\n\n" + help);
     }
     private VBox sectionPane(VBox right, int labelIndex, int bodyIndex) {
-        VBox section = new VBox(4, (Node) right.getChildren().get(labelIndex), (Node) right.getChildren().get(bodyIndex));
+        VBox section = new VBox(4, right.getChildren().get(labelIndex), right.getChildren().get(bodyIndex));
         VBox.setVgrow(section.getChildren().get(1), Priority.ALWAYS);
         return section;
     }
@@ -388,7 +388,7 @@ public final class JKubeTermApp extends Application {
         root.setScaleY(uiZoom);
     }
     private void setUiZoom(double zoom) {
-        uiZoom = Math.min(AppConfig.MAX_ZOOM, Math.max(AppConfig.MIN_ZOOM, Math.round(zoom * 10.0) / 10.0));
+        uiZoom = Math.clamp(Math.round(zoom * 10.0) / 10.0, AppConfig.MIN_ZOOM, AppConfig.MAX_ZOOM);
         Scene scene = stage.getScene();
         if (scene != null && scene.getRoot() != null) {
             scene.getRoot().setScaleX(uiZoom);
@@ -410,10 +410,10 @@ public final class JKubeTermApp extends Application {
             size.setHeaderText("UI font size (" + (int) AppConfig.MIN_FONT + "–" + (int) AppConfig.MAX_FONT + " pt)");
             size.setContentText("Size:");
             size.showAndWait().ifPresent(raw -> {
-                try {
-                    double parsed = Double.parseDouble(raw.trim());
-                    fontSize = Math.min(AppConfig.MAX_FONT, Math.max(AppConfig.MIN_FONT, parsed));
-                } catch (NumberFormatException ignored) { /* keep previous */ }
+            try {
+                double parsed = Double.parseDouble(raw.trim());
+                fontSize = Math.clamp(parsed, AppConfig.MIN_FONT, AppConfig.MAX_FONT);
+            } catch (NumberFormatException ignored) { /* keep previous */ }
                 if (stage.getScene() != null) applyFontAndZoom(stage.getScene());
                 persistSettings();
             });
@@ -816,7 +816,6 @@ public final class JKubeTermApp extends Application {
         pick.setContentText("Practice:");
         pick.getDialogPane().setMinWidth(640);
         pick.showAndWait().ifPresent(selected -> {
-            if (selected == null) return;
             Alert view = new Alert(Alert.AlertType.INFORMATION);
             view.setTitle("Practice: " + selected.id());
             view.setHeaderText("[" + selected.severity() + "] " + selected.title());
