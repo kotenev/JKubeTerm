@@ -407,7 +407,7 @@ public final class DrillDown {
     private static List<String> ownerNames(HasMetadata item) {
         if (item.getMetadata() == null || item.getMetadata().getOwnerReferences() == null) return List.of();
         return item.getMetadata().getOwnerReferences().stream()
-            .map(io.fabric8.kubernetes.api.model.OwnerReference::getName).filter(n -> n != null).toList();
+            .map(io.fabric8.kubernetes.api.model.OwnerReference::getName).filter(java.util.Objects::nonNull).toList();
     }
 
     private static <T> List<T> nullSafe(List<T> list) { return list == null ? List.of() : list; }
