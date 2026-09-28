@@ -40,6 +40,8 @@ public final class JKubeTermApp extends Application {
     private final Label catalogHint = new Label();
     private SplitPane rightPane;
     private SplitPane contentPane;
+    private SplitPane bottomPane;
+    private VBox dockBox;
     private AppConfig.Settings appSettings;
     private double uiZoom = 1.0;
     private String fontFamily = "System";
@@ -159,6 +161,14 @@ public final class JKubeTermApp extends Application {
         VBox middle = new VBox(8, catalogHint, filter, table); VBox.setVgrow(table, Priority.ALWAYS);
         SplitPane content = new SplitPane(kinds, middle, rightSplit); content.setDividerPositions(.15, .55);
         contentPane = content;
+        dockBox = new VBox(4, new Label("Dock — drag any section here by its ⋮⋮ handle"));
+        dockBox.setPadding(new Insets(4));
+        ScrollPane dockScroll = new ScrollPane(dockBox);
+        dockScroll.setFitToWidth(true);
+        SplitPane bottomSplit = new SplitPane(content, dockScroll);
+        bottomSplit.setOrientation(javafx.geometry.Orientation.VERTICAL);
+        bottomSplit.setDividerPositions(0.78);
+        bottomPane = bottomSplit;
         table.setRowFactory(view -> {
             TableRow<HasMetadata> row = new TableRow<>();
             row.setOnMouseClicked(click -> {
@@ -200,7 +210,7 @@ public final class JKubeTermApp extends Application {
         tutorialHint.setVisible(false);
         tutorialHint.setManaged(false);
         tutorialHint.getStyleClass().add("tutorial-hint");
-        BorderPane root = new BorderPane(content, new VBox(menuBar, top, tutorialHint), null, new HBox(8, new Label("JKubeTerm 0.1"), status), null);
+        BorderPane root = new BorderPane(bottomSplit, new VBox(menuBar, top, tutorialHint), null, new HBox(8, new Label("JKubeTerm 0.1"), status), null);
         root.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/jkubeterm.css")).toExternalForm());
         Scene scene = new Scene(root, 1380, 840);
         appSettings = AppConfig.load();
@@ -220,8 +230,22 @@ public final class JKubeTermApp extends Application {
         primaryStage.heightProperty().addListener((obs, old, value) -> persistSettings());
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
         rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3());
+        bottomPane.setDividerPositions(appSettings.bottomDivider());
         for (var divider : contentPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
         for (var divider : rightPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
+        for (var divider : bottomPane.getDividers()) divider.positionProperty().addListener((obs, old, value) -> persistSettings());
+        dockScroll.setOnDragOver(drag -> {
+            if (drag.getGestureSource() != dockScroll && drag.getDragboard().hasString()) drag.acceptTransferModes(javafx.scene.input.TransferMode.MOVE);
+            drag.consume();
+        });
+        dockScroll.setOnDragDropped(drop -> {
+            String title = drop.getDragboard().hasString() ? drop.getDragboard().getString() : null;
+            VBox section = title == null ? null : findSection(title);
+            boolean done = false;
+            if (section != null) { dockSection(section); done = true; }
+            drop.setDropCompleted(done);
+            drop.consume();
+        });
         primaryStage.show();
         kinds.getSelectionModel().select(ResourceKind.PODS);
         namespaces.valueProperty().addListener((obs, old, value) -> refresh());
@@ -373,12 +397,63 @@ public final class JKubeTermApp extends Application {
         help("Attribute: " + rowHelp.field() + " (" + rowHelp.kind() + ")", rowHelp.field() + " = " + rowHelp.value() + "\n\n" + help);
     }
     private VBox labeled(String title, Node body) {
-        VBox section = new VBox(4, new Label(title), wrapScroll(body));
+        VBox section = new VBox(4);
+        HBox header = new HBox(6, new Label("⋮⋮"), new Label(title));
+        header.getStyleClass().add("dock-handle");
+        header.setCursor(javafx.scene.Cursor.MOVE);
+        header.setOnMouseClicked(click -> {
+            if (click.getClickCount() == 2) toggleDock(section);
+        });
+        header.setOnDragDetected(drag -> {
+            javafx.scene.input.Dragboard board = header.startDragAndDrop(javafx.scene.input.TransferMode.MOVE);
+            javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+            content.putString(title);
+            board.setContent(content);
+            drag.consume();
+        });
+        section.getProperties().put("dockTitle", title);
+        section.getChildren().addAll(header, wrapScroll(body));
         VBox.setVgrow(section.getChildren().get(1), Priority.ALWAYS);
         return section;
     }
+    private VBox findSection(String title) {
+        for (var item : rightPane.getItems())
+            if (item instanceof VBox section && title.equals(section.getProperties().get("dockTitle"))) return section;
+        for (var node : dockBox.getChildren())
+            if (node instanceof VBox section && title.equals(section.getProperties().get("dockTitle"))) return section;
+        return null;
+    }
+    private void toggleDock(VBox section) {
+        if (bottomPane == null || dockBox == null) return;
+        String title = String.valueOf(section.getProperties().get("dockTitle"));
+        if (dockBox.getChildren().stream().anyMatch(n -> title.equals(n.getProperties().get("dockTitle")))) {
+            dockBox.getChildren().removeIf(n -> title.equals(n.getProperties().get("dockTitle")));
+            restoreSection(section);
+        } else {
+            dockSection(section);
+        }
+        persistSettings();
+    }
+    private void dockSection(VBox section) {
+        VBox host = dockHost(section);
+        if (host == null) return;
+        host.getChildren().remove(section);
+        section.getProperties().put("dockFrom", host);
+        dockBox.getChildren().removeIf(n -> n instanceof Label && "Dock — drag any section here by its ⋮⋮ handle".equals(((Label) n).getText()));
+        dockBox.getChildren().add(section);
+    }
+    private void restoreSection(VBox section) {
+        Object from = section.getProperties().get("dockFrom");
+        SplitPane host = rightPane;
+        if (from instanceof SplitPane pane) host = pane;
+        else if (from instanceof VBox) return;
+        if (!host.getItems().contains(section)) host.getItems().add(section);
+    }
+    private VBox dockHost(VBox section) {
+        if (section.getParent() instanceof VBox host) return host;
+        return null;
+    }
     private ScrollPane wrapScroll(Node body) {
-        if (body instanceof ScrollPane scroll) { scroll.setFitToWidth(true); return scroll; }
         ScrollPane scroll = new ScrollPane(body);
         scroll.setFitToWidth(true);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
@@ -433,18 +508,21 @@ public final class JKubeTermApp extends Application {
         stage.setHeight(appSettings.windowHeight());
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
         rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3());
+        bottomPane.setDividerPositions(appSettings.bottomDivider());
         if (stage.getScene() != null) applyFontAndZoom(stage.getScene());
         persistSettings();
     }
     private void persistSettings() {
-        if (stage == null || stage.getScene() == null || contentPane == null || rightPane == null) return;
+        if (stage == null || stage.getScene() == null || contentPane == null || rightPane == null || bottomPane == null) return;
         double[] main = contentPane.getDividerPositions();
         double[] right = rightPane.getDividerPositions();
+        double[] bottom = bottomPane.getDividerPositions();
         AppConfig.Settings next = new AppConfig.Settings(
             stage.getWidth(), stage.getHeight(),
             main.length > 0 ? main[0] : 0.15, main.length > 1 ? main[1] : 0.55,
             right.length > 0 ? right[0] : 0.34, right.length > 1 ? right[1] : 0.52,
             right.length > 2 ? right[2] : 0.68, right.length > 3 ? right[3] : 0.82,
+            bottom.length > 0 ? bottom[0] : 0.78,
             fontFamily, fontSize, uiZoom);
         try {
             AppConfig.save(next);

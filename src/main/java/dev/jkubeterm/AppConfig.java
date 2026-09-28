@@ -24,9 +24,10 @@ public final class AppConfig {
     public record Settings(double windowWidth, double windowHeight,
                            double mainDivider0, double mainDivider1,
                            double rightDivider0, double rightDivider1, double rightDivider2, double rightDivider3,
+                           double bottomDivider,
                            String fontFamily, double fontSize, double uiZoom) {
         public static Settings defaults() {
-            return new Settings(1380, 840, 0.15, 0.55, 0.34, 0.52, 0.68, 0.82, "System", DEFAULT_FONT, 1.0);
+            return new Settings(1380, 840, 0.15, 0.55, 0.34, 0.52, 0.68, 0.82, 0.78, "System", DEFAULT_FONT, 1.0);
         }
     }
 
@@ -57,6 +58,7 @@ public final class AppConfig {
         props.setProperty("divider.right.1", Double.toString(settings.rightDivider1()));
         props.setProperty("divider.right.2", Double.toString(settings.rightDivider2()));
         props.setProperty("divider.right.3", Double.toString(settings.rightDivider3()));
+        props.setProperty("divider.bottom", Double.toString(settings.bottomDivider()));
         props.setProperty("font.family", settings.fontFamily());
         props.setProperty("font.size", Double.toString(settings.fontSize()));
         props.setProperty("ui.zoom", Double.toString(settings.uiZoom()));
@@ -76,6 +78,7 @@ public final class AppConfig {
             clamp01(props, "divider.right.1", defaults.rightDivider1()),
             clamp01(props, "divider.right.2", defaults.rightDivider2()),
             clamp01(props, "divider.right.3", defaults.rightDivider3()),
+            clamp01(props, "divider.bottom", defaults.bottomDivider()),
             fontFamily(props.getProperty("font.family", defaults.fontFamily())),
             clampDouble(props, "font.size", defaults.fontSize(), MIN_FONT, MAX_FONT),
             clampDouble(props, "ui.zoom", defaults.uiZoom(), MIN_ZOOM, MAX_ZOOM));
