@@ -24,11 +24,11 @@ public final class AppConfig {
     public record Settings(double windowX, double windowY, double windowWidth, double windowHeight,
                            double mainDivider0, double mainDivider1,
                            double rightDivider0, double rightDivider1, double rightDivider2, double rightDivider3,
-                           double bottomDivider, double shelfDivider,
+                           double bottomDivider, double shelfDivider, double atticDivider,
                            String dockedSections,
                            String fontFamily, double fontSize, double uiZoom) {
         public static Settings defaults() {
-            return new Settings(Double.NaN, Double.NaN, 1380, 840, 0.15, 0.55, 0.34, 0.52, 0.68, 0.82, 0.78, 0.5, "", "System", DEFAULT_FONT, 1.0);
+            return new Settings(Double.NaN, Double.NaN, 1380, 840, 0.15, 0.55, 0.34, 0.52, 0.68, 0.82, 0.78, 0.5, 0.12, "", "System", DEFAULT_FONT, 1.0);
         }
     }
 
@@ -63,6 +63,7 @@ public final class AppConfig {
         props.setProperty("divider.right.3", Double.toString(settings.rightDivider3()));
         props.setProperty("divider.bottom", Double.toString(settings.bottomDivider()));
         props.setProperty("divider.shelf", Double.toString(settings.shelfDivider()));
+        props.setProperty("divider.attic", Double.toString(settings.atticDivider()));
         props.setProperty("docked.sections", settings.dockedSections() == null ? "" : settings.dockedSections());
         props.setProperty("font.family", settings.fontFamily());
         props.setProperty("font.size", Double.toString(settings.fontSize()));
@@ -87,6 +88,7 @@ public final class AppConfig {
             clamp01(props, "divider.right.3", defaults.rightDivider3()),
             clamp01(props, "divider.bottom", defaults.bottomDivider()),
             clamp01(props, "divider.shelf", defaults.shelfDivider()),
+            clamp01(props, "divider.attic", defaults.atticDivider()),
             props.getProperty("docked.sections", defaults.dockedSections()),
             fontFamily(props.getProperty("font.family", defaults.fontFamily())),
             clampDouble(props, "font.size", defaults.fontSize(), MIN_FONT, MAX_FONT),
