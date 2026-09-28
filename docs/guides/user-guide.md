@@ -36,6 +36,12 @@ deployments), **First deploy drill** (шаблон → правка → namespac
 
 ## Навигация и просмотр {#browse}
 
+Каждый вид слева имеет свою векторную иконку и однострочное объяснение под
+фильтром — что это за сущность и зачем она новичку («Under the hood» для
+выбранного объекта рассказывает, какие контроллеры им занимаются, а «Best
+practices» подсвечивает проблемы: нет probes/resources, root, `:latest`,
+одна реплика, Ingress без TLS — каждая с Fix-подсказкой).
+
 Двойной клик по строке таблицы (или правый клик → Drill down…) открывает
 связанные ресурсы: Pod → Node/Events/Services/ConfigMap/PVC/Job, Deployment →
 свои Pod'ы, Service → Pod'ы за селектором + Ingress'ы, Ingress → backend

@@ -94,9 +94,9 @@ classDiagram
 | Menu bar | **Help** (User guide, Admin guide, QuickStart, About), **Tutorial** (Start guided tour, First deploy drill, Debug flow drill, Stop tutorial) | Help opens info dialogs with docs links; Tutorial starts/stops `Tutorial` wizard (hint strip + `tutorial-target` highlight + Next/Exit buttons in actions pane) |
 | Top toolbar | `ComboBox<KubeconfigLoader.ContextRef>` (w=265), **Connect**, **↻ Config**, `ComboBox<String>` namespaces (w=165), **Refresh**, **Diagnose** | Connect → `connect()` (failure prints `ConnectionDiagnostics.describe` to console); ↻ Config → `loadContexts()`; namespace change → `refresh()`; Diagnose → `diagnose()` (step-by-step `[OK]/[FAIL]` + FIX hints) |
 | Tutorial hint | `Label.tutorial-hint` under toolbar (hidden unless touring) | `«Tutorial i/N — title + body»`; Next/Finish advances, Exit stops and clears highlight |
-| Left | `ListView<ResourceKind>` (w=180) | All 14 kinds; selection → `refresh()` |
-| Middle | filter `TextField` + `TableView<HasMetadata>` | Columns Name / Namespace / Kind / Created; filter applies locally (lowercase `contains`) via `showItems()`; constrained flex-last-column resize; double-click / right-click «Drill down…» → `drillDown()` (targets dialog → worker `resolve` → `selectFound`); `⇄ Relations` double-click → catalog-wide `findByName` |
-| Right | Edit-mode checkbox, Apply YAML, Delete, Pod logs, Exec command, Port forward, Scale, Restart, Helm releases, Save YAML…, New YAML; manifest `TextArea`; **Object** `TreeView` (`ResourceInspector`); console `TextArea` | FlowPane of actions; `editMode.selectedProperty` toggles manifest editability; row selection loads `service.yaml(item)` + `showObject(item)` (typed sections + ⇄ Relations graph) and resets edit mode; ConfigMap PEM rows (`⤓`, `isPemCertificate`) double-click → `exportEntry()` FileChooser save |
+| Left | icons + `ListView<ResourceKind>` (w=180) | All 14 kinds with inline-SVG icons (`ClusterVisuals`, distinct path + color per kind); selection → `refresh()` + catalog hint |
+| Middle | catalog hint, filter `TextField` + `TableView<HasMetadata>` | Hint `Label.catalog-hint` with kind icon + one-line beginner explanation (`ClusterVisuals.explain`); columns Name / Namespace / Kind / Created; filter applies locally (lowercase `contains`) via `showItems()`; constrained flex-last-column resize; double-click / right-click «Drill down…» → `drillDown()` (targets dialog → worker `resolve` → `selectFound`); `⇄ Relations` double-click → catalog-wide `findByName` |
+| Right | Edit-mode checkbox, Apply YAML, Delete, Pod logs, Exec command, Port forward, Scale, Restart, Helm releases, Save YAML…, New YAML; manifest `TextArea`; **Object** `TreeView` (`ResourceInspector`); **Under the hood** explainer; **Best practices** findings (`ClusterAdvisor`); console `TextArea` | FlowPane of actions; `editMode.selectedProperty` toggles manifest editability; row selection loads `service.yaml(item)` + `showObject(item)` (typed sections + ⇄ Relations graph) + `showHoodAndAdvice(item)` and resets edit mode; ConfigMap PEM rows (`⤓`, `isPemCertificate`) double-click → `exportEntry()` FileChooser save |
 | Bottom | status `Label` | Every state transition writes a status message |
 
 ### Instance state
@@ -197,6 +197,30 @@ the row. Object-view `⇄ Relations` links double-click into catalog-wide
 `findByName` (`relationTargetKind` maps route/mounts/bound labels to kinds).
 Covered by `DrillDownTest` (14 tests: targets per kind, matchers, pod-spec
 extraction, ref scanners).
+
+### Vector icons, under-the-hood explainer, best-practice advisor
+
+`ClusterVisuals` (`src/main/java/dev/jkubeterm/ClusterVisuals.java:14`) holds
+one inline-SVG path (24x24) plus a hex color per `ResourceKind` — no image
+assets, rendered as `SVGPath` in the kinds list cells and the middle-column
+catalog hint. `explain(kind)` is a one-line beginner sentence per kind
+(hexagon Pod, layered Deployment, database cylinder StatefulSet, grid DaemonSet,
+arrow Service, document ConfigMap, play Job, clock CronJob, globe Ingress,
+cylinder PVC, bell Events, server Nodes, folder Namespaces, disk PV).
+
+`ClusterAdvisor` (`src/main/java/dev/jkubeterm/ClusterAdvisor.java:16`) is a
+JavaFX-free checker: `advise(HasMetadata)` returns `Finding(severity, check,
+message, fix)` for Pod/Deployment/StatefulSet/Service/Ingress/CronJob —
+missing readiness/liveness probes, missing requests/limits, root/escalation
+risks, host namespaces (CRITICAL), floating `:latest` tags, single replica,
+Recreate strategy, unfinished rollout, selector-less or NodePort/LoadBalancer
+Services, TLS-less or class-less Ingress, suspended/bad-schedule CronJobs,
+CrashLoop/ImagePullBackOff Pods. `explainHood(pod)` narrates scheduling in one
+sentence; `hoodTextFor()` in the app covers the remaining kinds. The right pane
+renders «Under the hood» text plus «Best practices» cards (⛔/⚠️/ℹ️ badges with
+message + Fix), or a green «no issues» label. Covered by
+`ClusterVisualsAdvisorTest` (icons distinct + valid hex, explain fallback,
+advisor triggers, compliant-pod quiet, hood text).
 
 ## 3. `KubernetesService` — Fabric8 facade
 

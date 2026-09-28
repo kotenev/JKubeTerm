@@ -6,10 +6,13 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.shape.SVGPath;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -33,6 +36,10 @@ public final class JKubeTermApp extends Application {
     private final TextArea details = new TextArea();
     private final TextArea console = new TextArea();
     private final TreeView<String> objectView = new TreeView<>();
+    private final VBox hoodBox = new VBox(4);
+    private final VBox advisorBox = new VBox(4);
+    private final Label hoodText = new Label("Select a resource to see what happens under the hood.");
+    private final Label catalogHint = new Label();
     private final java.util.Map<TreeItem<String>, ResourceInspector.ExportableEntry> exportableNodes = new java.util.WeakHashMap<>();
     private final java.util.Map<TreeItem<String>, DrillDown.Target> drillNodes = new java.util.WeakHashMap<>();
     private final Label status = new Label("Choose a context");
@@ -68,7 +75,22 @@ public final class JKubeTermApp extends Application {
         HBox top = new HBox(8, new Label("Context"), contexts, connectButton, reloadContextsButton, new Label("Namespace"), namespaces, refreshButton, diagnoseButton);
         top.setPadding(new Insets(10)); top.getStyleClass().add("toolbar");
         kinds.setItems(FXCollections.observableArrayList(ResourceKind.values())); kinds.setPrefWidth(180);
-        kinds.getSelectionModel().selectedItemProperty().addListener((obs, old, kind) -> refresh());
+        kinds.setCellFactory(list -> new ListCell<>() {
+            @Override protected void updateItem(ResourceKind item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) { setText(null); setGraphic(null); return; }
+                SVGPath icon = new SVGPath();
+                icon.setContent(ClusterVisuals.svgPath(item));
+                icon.setFill(javafx.scene.paint.Color.web(ClusterVisuals.colorHex(item)));
+                icon.setScaleX(0.85); icon.setScaleY(0.85);
+                Label label = new Label(item.label, icon);
+                label.setContentDisplay(ContentDisplay.LEFT);
+                label.setGraphicTextGap(8);
+                setGraphic(label);
+                setText(null);
+            }
+        });
+        kinds.getSelectionModel().selectedItemProperty().addListener((obs, old, selectedKind) -> { showCatalogHint(selectedKind); refresh(); });
         filter.setPromptText("Filter by name…"); filter.textProperty().addListener((obs, old, v) -> showItems());
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         TableColumn<HasMetadata, String> name = column("Name", o -> o.getMetadata().getName());
@@ -85,6 +107,10 @@ public final class JKubeTermApp extends Application {
         });
         objectView.setRoot(new TreeItem<>("Select a resource"));
         objectView.setShowRoot(true);
+        hoodText.setWrapText(true);
+        hoodBox.getChildren().add(hoodText);
+        catalogHint.setWrapText(true);
+        catalogHint.getStyleClass().add("catalog-hint");
         objectView.setOnMouseClicked(click -> {
             if (click.getClickCount() != 2) return;
             TreeItem<String> selected = objectView.getSelectionModel().getSelectedItem();
@@ -113,10 +139,10 @@ public final class JKubeTermApp extends Application {
         FlowPane actions = new FlowPane(6, 6, editMode, apply, remove, logs, shell, forward, scale, restart, helm, save, newYaml);
         actions.setPadding(new Insets(8));
         actionsPane = actions;
-        VBox right = new VBox(8, actions, new Label("Manifest"), details, new Label("Object"), objectView, new Label("Output / logs"), console);
+        VBox right = new VBox(8, actions, new Label("Manifest"), details, new Label("Object"), objectView, new Label("Under the hood"), hoodBox, new Label("Best practices"), advisorBox, new Label("Output / logs"), console);
         VBox.setVgrow(details, Priority.ALWAYS); VBox.setVgrow(objectView, Priority.ALWAYS); VBox.setVgrow(console, Priority.ALWAYS);
-        details.setPrefRowCount(10); objectView.setPrefHeight(220); console.setPrefRowCount(7);
-        VBox middle = new VBox(8, filter, table); VBox.setVgrow(table, Priority.ALWAYS);
+        details.setPrefRowCount(8); objectView.setPrefHeight(180); console.setPrefRowCount(6);
+        VBox middle = new VBox(8, catalogHint, filter, table); VBox.setVgrow(table, Priority.ALWAYS);
         SplitPane content = new SplitPane(kinds, middle, right); content.setDividerPositions(.15, .55);
         table.setRowFactory(view -> {
             TableRow<HasMetadata> row = new TableRow<>();
@@ -236,7 +262,18 @@ public final class JKubeTermApp extends Application {
         String query = filter.getText().strip().toLowerCase(java.util.Locale.ROOT);
         table.setItems(FXCollections.observableArrayList(currentItems.stream().filter(i -> i.getMetadata() != null && i.getMetadata().getName() != null && i.getMetadata().getName().toLowerCase(java.util.Locale.ROOT).contains(query)).toList()));
     }
+    private void showCatalogHint(ResourceKind kind) {
+        if (kind == null) return;
+        SVGPath icon = new SVGPath();
+        icon.setContent(ClusterVisuals.svgPath(kind));
+        icon.setFill(javafx.scene.paint.Color.web(ClusterVisuals.colorHex(kind)));
+        icon.setScaleX(0.7); icon.setScaleY(0.7);
+        String text = ClusterVisuals.explain(kind);
+        catalogHint.setText(text);
+        catalogHint.setGraphic(icon);
+    }
     private void showObject(HasMetadata item) {
+        showCatalogHint(DrillDown.kindForKindName(item.getKind()).orElse(kinds.getSelectionModel().getSelectedItem()));
         ResourceInspector.Inspection inspection = ResourceInspector.inspect(item);
         TreeItem<String> root = new TreeItem<>(inspection.sections().isEmpty() ? item.getKind() + " " + item.getMetadata().getName()
             : item.getKind() + " " + item.getMetadata().getName() + " — " + inspection.sections().size() + " sections, " + inspection.relations().size() + " links");
@@ -268,6 +305,62 @@ public final class JKubeTermApp extends Application {
             if (!graph.getChildren().isEmpty()) root.getChildren().add(graph);
         }
         objectView.setRoot(root);
+        showHoodAndAdvice(item);
+    }
+    private void showHoodAndAdvice(HasMetadata item) {
+        hoodBox.getChildren().clear();
+        advisorBox.getChildren().clear();
+        Label hood = new Label(hoodTextFor(item));
+        hood.setWrapText(true);
+        hoodBox.getChildren().add(hood);
+        List<ClusterAdvisor.Finding> findings = ClusterAdvisor.advise(item);
+        if (findings.isEmpty()) {
+            Label ok = new Label("✓ No best-practice issues detected for this object.");
+            ok.getStyleClass().add("advisor-ok");
+            advisorBox.getChildren().add(ok);
+            return;
+        }
+        for (ClusterAdvisor.Finding finding : findings) {
+            HBox row = new HBox(6);
+            Label badge = new Label(switch (finding.severity()) {
+                case CRITICAL -> "⛔";
+                case WARN -> "⚠️";
+                case INFO -> "ℹ️";
+            });
+            VBox text = new VBox(2);
+            Label message = new Label(finding.message());
+            message.setWrapText(true);
+            Label fix = new Label("Fix: " + finding.fix());
+            fix.setWrapText(true);
+            fix.getStyleClass().add("advisor-fix");
+            text.getChildren().addAll(message, fix);
+            HBox.setHgrow(text, Priority.ALWAYS);
+            row.getChildren().addAll(badge, text);
+            row.getStyleClass().add("advisor-" + finding.severity().name().toLowerCase());
+            advisorBox.getChildren().add(row);
+        }
+    }
+    private String hoodTextFor(HasMetadata item) {
+        if (item instanceof io.fabric8.kubernetes.api.model.Pod pod) return ClusterAdvisor.explainHood(pod);
+        String kind = item.getKind();
+        String name = item.getMetadata() == null ? "" : item.getMetadata().getName();
+        if (kind == null) return ClusterVisuals.explainKind(null);
+        return switch (kind) {
+            case "Deployment" -> "Deployment '" + name + "' owns a ReplicaSet, which keeps N Pod copies alive. kube-controller-manager reconciles the count; kube-scheduler places each Pod; kubelet starts the containers.";
+            case "StatefulSet" -> "StatefulSet '" + name + "' gives each Pod a stable name plus its own PVC (data-" + name + "-N), created and deleted strictly in order.";
+            case "DaemonSet" -> "DaemonSet '" + name + "' ensures one Pod copy on every (matching) node — new nodes get one automatically.";
+            case "Service" -> "Service '" + name + "' is a stable virtual IP plus DNS; kube-proxy on every node programs the forwarding to the backing Pods selected by labels.";
+            case "Ingress" -> "Ingress '" + name + "' is a routing rule (host plus path → Service). The ingress-nginx controller watches it and reconfigures nginx.";
+            case "Job" -> "Job '" + name + "' runs Pods until completions are reached, retrying up to backoffLimit — then stops.";
+            case "CronJob" -> "CronJob '" + name + "' creates a Job on each schedule tick, keeping limited history.";
+            case "ConfigMap" -> "ConfigMap '" + name + "' injects plain-text config as env or files. Env needs a Pod restart; files sync within about a minute.";
+            case "PersistentVolumeClaim" -> "Claim '" + name + "' waits for a matching PersistentVolume (or a provisioner to create one), then binds 1:1.";
+            case "PersistentVolume" -> "Volume '" + name + "' is cluster disk surviving Pods; a claim binds to it exclusively until released.";
+            case "Node" -> "Node '" + name + "' runs kubelet plus containerd: it pulls images, starts containers, and reports capacity and conditions.";
+            case "Namespace" -> "Namespace '" + name + "' scopes names, RBAC, quotas and policies — a folder, not a boundary for the network.";
+            case "Event" -> "Event '" + name + "' is a timestamped note from a controller about another object — newest-first is the debugging order.";
+            default -> ClusterVisuals.explainKind(kind);
+        };
     }
     private Optional<ResourceKind> relationKind(ResourceInspector.Relation relation) {
         return DrillDown.relationTargetKind(relation.label());
@@ -586,6 +679,8 @@ public final class JKubeTermApp extends Application {
             case "table" -> table;
             case "details" -> details;
             case "objectView" -> objectView;
+            case "hood" -> hoodBox;
+            case "advisor" -> advisorBox;
             case "editMode" -> editMode;
             case "apply" -> applyButton;
             case "remove" -> removeButton;

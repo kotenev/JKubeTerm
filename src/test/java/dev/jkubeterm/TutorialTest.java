@@ -29,7 +29,7 @@ class TutorialTest {
         var known = java.util.Set.of("contexts", "connect", "reload-contexts", "namespaces",
             "refresh", "kinds", "filter", "table", "details", "editMode", "apply", "remove",
             "logs", "shell", "forward", "scale", "restart", "helm", "save", "newYaml",
-            "diagnose", "console", "status");
+            "diagnose", "hood", "advisor", "console", "status");
         for (Tutorial tour : java.util.List.of(Tutorial.guidedTour(), Tutorial.firstDeploy(), Tutorial.debugFlow()))
             for (Tutorial.Step step : tour.steps())
                 for (String id : step.targetIds())

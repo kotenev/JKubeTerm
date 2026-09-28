@@ -7,3 +7,9 @@
 .toolbar { -fx-background-color: #203044; }
 .tutorial-hint { -fx-text-fill: #ffe9a8; -fx-background-color: #3a2f14; -fx-padding: 8 10; -fx-font-size: 12.5px; }
 .tutorial-target { -fx-effect: dropshadow(gaussian, #ffd54a, 14, 0.35, 0, 0); -fx-border-color: #ffd54a; -fx-border-width: 2; -fx-border-radius: 5; }
+.catalog-hint { -fx-text-fill: #b9d4ee; -fx-font-size: 12px; -fx-background-color: #1c2c40; -fx-background-radius: 5; -fx-padding: 6 8; }
+.advisor-ok { -fx-text-fill: #9ccc9c; -fx-font-size: 12px; }
+.advisor-fix { -fx-text-fill: #b9d4ee; -fx-font-size: 11.5px; }
+.advisor-critical { -fx-background-color: #4a1f1f; -fx-background-radius: 5; -fx-padding: 5; }
+.advisor-warn { -fx-background-color: #4a3d1c; -fx-background-radius: 5; -fx-padding: 5; }
+.advisor-info { -fx-background-color: #22384a; -fx-background-radius: 5; -fx-padding: 5; }
