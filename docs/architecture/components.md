@@ -96,7 +96,7 @@ classDiagram
 | Tutorial hint | `Label.tutorial-hint` under toolbar (hidden unless touring) | `«Tutorial i/N — title + body»`; Next/Finish advances, Exit stops and clears highlight |
 | Left | icons + `ListView<ResourceKind>` (w=180) | All 14 kinds with inline-SVG icons (`ClusterVisuals`, distinct path + color per kind); selection → `refresh()` + catalog hint |
 | Middle | catalog hint, filter `TextField` + `TableView<HasMetadata>` | Hint `Label.catalog-hint` with kind icon + one-line beginner explanation (`ClusterVisuals.explain`); columns Name / Namespace / Kind / Created; filter applies locally (lowercase `contains`) via `showItems()`; constrained flex-last-column resize; double-click / right-click «Drill down…» → `drillDown()` (targets dialog → worker `resolve` → `selectFound`); `⇄ Relations` double-click → catalog-wide `findByName` |
-| Right | vertical `SplitPane` (Manifest / Object / Under the hood / Best practices / Output) | Each section is a labelled pane with its own `ScrollPane`; divider positions persist to `~/.jkubeterm/config.properties` via `AppConfig` (window size too); `⋮⋮` header drags or double-click docks the section into the bottom Dock |
+| Right | vertical `SplitPane` (Actions / Manifest / Object / Under the hood / Best practices / Output) | Each section is a labelled dockable pane (`⋮⋮` handle, drag-and-drop or double-click) with its own `ScrollPane`; divider positions (`divider.right.0-4`) persist to `~/.jkubeterm/config.properties` |
 | Top attic | drop zone directly under the window title, above all other panes | Accepts any right-pane section (e.g. the actions bar) by drag-and-drop or double-click; own horizontal divider (`divider.attic`, default 0.12) persists; sections restore from `docked.sections` (`attic:` prefix) |
 | Bottom dock | two stacked drop zones (Shelf above, Dock below) split by a second horizontal divider | Shelf + Dock each accept sections by drag-and-drop or double-click; both dividers persist (`divider.bottom`, `divider.shelf`); double-click on a docked section restores it to the right pane |
 | Best practices | two compact `TitledPane`s: ⚠️ Issues / ✓ Passing | One-line clickable cards (`[check-id] short title` → `openPractice()` wiki dialog, double-click too); passing pane collapsed by default; registry note shows wiki size + user-file path |
@@ -227,7 +227,7 @@ advisor triggers, compliant-pod quiet, hood text).
 
 ### Practices wiki, per-kind docs, version highlights, attribute help
 `PracticeRegistry` (`src/main/java/dev/jkubeterm/PracticeRegistry.java:19`)
-is a Markdown wiki DB: bundled `/practices.md` (38 practices, one
+is a Markdown wiki DB: bundled `/practices.md` (351 practices, ≥30 per kind, one
 `## practice <id>` section with `Kinds/Severity/Title/Docs/### Why/### Fix`),
 user overrides at `~/.jkubeterm/practices.md` merged by id (user wins).
 `ClusterAdvisor.advise(resource, registry, serverVersion)` resolves every

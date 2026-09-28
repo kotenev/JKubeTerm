@@ -152,7 +152,9 @@ public final class JKubeTermApp extends Application {
         FlowPane actions = new FlowPane(6, 6, editMode, apply, remove, logs, shell, forward, scale, restart, helm, save, newYaml);
         actions.setPadding(new Insets(8));
         actionsPane = actions;
-        VBox right = new VBox(8, actions,
+        VBox actionsSection = labeled("Actions", actionsPane);
+        actionsSection.getProperties().put("dockTitle", "Actions");
+        VBox right = new VBox(8, actionsSection,
             labeled("Manifest", details),
             labeled("Object", objectView),
             labeled("Under the hood", hoodBox),
@@ -160,7 +162,7 @@ public final class JKubeTermApp extends Application {
             labeled("Output / logs", console));
         SplitPane rightSplit = new SplitPane(right.getChildren().toArray(new Node[0]));
         rightSplit.setOrientation(javafx.geometry.Orientation.VERTICAL);
-        rightSplit.setDividerPositions(0.34, 0.52, 0.68, 0.82);
+        rightSplit.setDividerPositions(0.14, 0.34, 0.52, 0.68, 0.82);
         rightPane = rightSplit;
         VBox middle = new VBox(8, catalogHint, filter, table); VBox.setVgrow(table, Priority.ALWAYS);
         SplitPane content = new SplitPane(kinds, middle, rightSplit); content.setDividerPositions(.15, .55);
@@ -256,7 +258,7 @@ public final class JKubeTermApp extends Application {
         primaryStage.widthProperty().addListener((obs, old, value) -> persistSettings());
         primaryStage.heightProperty().addListener((obs, old, value) -> persistSettings());
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
-        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3());
+        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3(), appSettings.rightDivider4());
         bottomPane.setDividerPositions(appSettings.bottomDivider());
         shelfPane.setDividerPositions(appSettings.shelfDivider());
         atticPane.setDividerPositions(appSettings.atticDivider());
@@ -524,7 +526,7 @@ public final class JKubeTermApp extends Application {
         Object from = section.getProperties().get("dockFrom");
         SplitPane host = rightPane;
         if (from instanceof SplitPane pane) host = pane;
-        if (!host.getItems().contains(section)) {
+        if (host != null && !host.getItems().contains(section)) {
             Object index = section.getProperties().get("dockIndex");
             int at = index instanceof Integer i ? Math.min(i, host.getItems().size()) : host.getItems().size();
             host.getItems().add(at, section);
@@ -588,7 +590,7 @@ public final class JKubeTermApp extends Application {
         stage.setWidth(appSettings.windowWidth());
         stage.setHeight(appSettings.windowHeight());
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
-        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3());
+        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3(), appSettings.rightDivider4());
         bottomPane.setDividerPositions(appSettings.bottomDivider());
         shelfPane.setDividerPositions(appSettings.shelfDivider());
         atticPane.setDividerPositions(appSettings.atticDivider());
@@ -607,6 +609,7 @@ public final class JKubeTermApp extends Application {
             main.length > 0 ? main[0] : 0.15, main.length > 1 ? main[1] : 0.55,
             right.length > 0 ? right[0] : 0.34, right.length > 1 ? right[1] : 0.52,
             right.length > 2 ? right[2] : 0.68, right.length > 3 ? right[3] : 0.82,
+            right.length > 4 ? right[4] : 0.9,
             bottom.length > 0 ? bottom[0] : 0.78, shelf.length > 0 ? shelf[0] : 0.5,
             attic.length > 0 ? attic[0] : 0.12,
             dockedSections(),

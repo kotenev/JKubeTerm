@@ -124,6 +124,7 @@ class ClusterAdvisorTest {
     }
 
     @Test void versionGatedHighlights() {
+        PracticeRegistry.reload();
         var sts = new io.fabric8.kubernetes.api.model.apps.StatefulSetBuilder()
             .withNewMetadata().withName("db").endMetadata()
             .withNewSpec().addNewVolumeClaimTemplate()
@@ -132,9 +133,10 @@ class ClusterAdvisorTest {
             .withNewResources().addToRequests("storage", new io.fabric8.kubernetes.api.model.Quantity("1Gi")).endResources()
             .endSpec().endVolumeClaimTemplate().endSpec().build();
         assertTrue(ClusterAdvisor.advise(sts, PracticeRegistry.cached(), "v1.37.0").stream()
-            .anyMatch(f -> f.check().equals("stateful-retention")));
+            .anyMatch(f -> f.check().equals("stateful-retention") && f.message().contains("1.37")));
         assertTrue(ClusterAdvisor.advise(sts, PracticeRegistry.cached(), "v1.30.0").stream()
-            .noneMatch(f -> f.check().equals("stateful-retention")));
+            .filter(f -> f.check().equals("stateful-retention"))
+            .allMatch(f -> !f.message().contains("Server is Kubernetes")));
         var job = new io.fabric8.kubernetes.api.model.batch.v1.JobBuilder()
             .withNewMetadata().withName("m").endMetadata()
             .withNewSpec().withNewTemplate().withNewSpec().withRestartPolicy("Never")
@@ -149,8 +151,8 @@ class ClusterAdvisorTest {
 class PracticeRegistryTest {
     @Test void parseBundledWiki() {
         var bundled = PracticeRegistry.loadBundled();
-        assertTrue(bundled.size() >= 30, "bundled wiki must be rich, got " + bundled.size());
-        var probe = PracticeRegistry.byId(bundled, "readiness-probe");
+        assertTrue(bundled.size() >= 200, "bundled wiki must be rich, got " + bundled.size());
+        var probe = PracticeRegistry.byId(bundled, "pod-readiness-gates");
         assertNotNull(probe);
         assertTrue(probe.docs().stream().anyMatch(u -> u.contains("kubernetes.io")));
         assertFalse(probe.why().isBlank());
@@ -177,10 +179,20 @@ class PracticeRegistryTest {
         assertFalse(highlights.getFirst().docs().isEmpty());
     }
 
+    @Test void everyKindHasRichCoverage() {
+        var all = PracticeRegistry.loadBundled();
+        for (String kind : java.util.List.of("Pod", "Deployment", "StatefulSet", "DaemonSet",
+                "Service", "ConfigMap", "Job", "CronJob", "Ingress", "PersistentVolumeClaim",
+                "Event", "Node", "Namespace", "PersistentVolume")) {
+            long count = PracticeRegistry.forKind(all, kind).size();
+            assertTrue(count >= 15, kind + " has only " + count + " practices");
+        }
+    }
+
     @Test void forKindFilters() {
         var all = PracticeRegistry.loadBundled();
-        assertTrue(PracticeRegistry.forKind(all, "Pod").stream().anyMatch(p -> p.id().equals("readiness-probe")));
-        assertTrue(PracticeRegistry.forKind(all, "Ingress").stream().noneMatch(p -> p.id().equals("readiness-probe")));
-        assertTrue(PracticeRegistry.forKind(all, "ConfigMap").stream().anyMatch(p -> p.id().equals("secret-sealed")));
+        assertTrue(PracticeRegistry.forKind(all, "Pod").stream().anyMatch(p -> p.id().equals("pod-init-containers")));
+        assertTrue(PracticeRegistry.forKind(all, "Ingress").stream().noneMatch(p -> p.id().equals("pod-init-containers")));
+        assertTrue(PracticeRegistry.forKind(all, "ConfigMap").stream().anyMatch(p -> p.id().equals("cm-size-limits")));
     }
 }

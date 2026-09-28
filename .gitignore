@@ -9,3 +9,6 @@ docs/guides/*.pdf
 
 # Generated training PDFs (tools/export-training-pdf.sh) — build artifacts
 docs/training/*.pdf
+
+# Generated book PDFs (tools/export-book-pdf.sh) — build artifacts
+docs/best-practices/*.pdf

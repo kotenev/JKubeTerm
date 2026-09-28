@@ -78,6 +78,10 @@ flowchart LR
 - **Training** — [course map](training/index.md): 12 модулей от Pod'а до
   GitOps-стека с проверкой каждого шага в JKubeTerm (PDF на модуль через
   `tools/export-training-pdf.sh`)
+- **Best Practices book** — [K8S Best Practices in JKubeTerm](best-practices/index.md):
+  351 практика по 14 категориям K8S (≥30 на вид), каждая с why/fix/Jakarta-workflow
+  и ссылками на kubernetes.io; генерируется из `src/main/resources/practices.md`
+  через `tools/gen-best-practices-book.py` (PDF на главу через `tools/export-book-pdf.sh`)
 
 ## Building this documentation
 

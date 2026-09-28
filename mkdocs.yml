@@ -99,6 +99,22 @@ nav:
       - 10 Security: training/10-security.md
       - 11 Troubleshooting: training/11-troubleshooting.md
       - 12 Demo apps: training/12-demo-apps.md
+  - Best Practices book:
+      - Book index: best-practices/index.md
+      - Pods: best-practices/01-pod.md
+      - Deployments: best-practices/02-deployment.md
+      - StatefulSets: best-practices/03-statefulset.md
+      - DaemonSets: best-practices/04-daemonset.md
+      - Services: best-practices/05-service.md
+      - ConfigMaps: best-practices/06-configmap.md
+      - Jobs: best-practices/07-job.md
+      - CronJobs: best-practices/08-cronjob.md
+      - Ingresses: best-practices/09-ingress.md
+      - PVCs: best-practices/10-pvc.md
+      - Events: best-practices/11-events.md
+      - Nodes: best-practices/12-node.md
+      - Namespaces: best-practices/13-namespace.md
+      - PersistentVolumes: best-practices/14-pv.md
   - Operations:
       - Security: operations/security.md
       - Roadmap: operations/roadmap.md
