@@ -42,6 +42,41 @@ public final class ResourceInspector {
     public record Inspection(List<Section> sections, List<Relation> relations) {}
     public record ExportableEntry(String kind, String name, String key, String value) {}
 
+    public static String helpFor(String kindName, String field) {
+        if (field == null) return null;
+        String base = field.split(" ")[0];
+        String key = (kindName == null ? "" : kindName + "/") + base;
+        return switch (key) {
+            case "Pod/phase", "Event/type" -> "Lifecycle phase. Docs: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase";
+            case "Pod/podIP" -> "Cluster-internal IP, changes on every reschedule. Stable access via Service. Docs: https://kubernetes.io/docs/concepts/services-networking/service/";
+            case "Pod/nodeName" -> "Node the scheduler picked. Pin with nodeSelector only deliberately. Docs: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/";
+            case "Pod/restartPolicy" -> "Always for Deployments; Never/OnFailure for Jobs. Docs: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy";
+            case "Pod/serviceAccount" -> "Identity for API calls from the Pod. Docs: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/";
+            case "Deployment/replicas" -> "Desired Pod copies; 2+ for availability. Docs: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/";
+            case "Deployment/strategy" -> "RollingUpdate for zero downtime; Recreate only with RWO volumes. Docs: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy";
+            case "Service/type" -> "ClusterIP inside, NodePort/LoadBalancer outside. Docs: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types";
+            case "Service/clusterIP" -> "Stable virtual IP plus DNS name. Docs: https://kubernetes.io/docs/concepts/services-networking/service/";
+            case "Ingress/class" -> "Which controller serves this rule. Docs: https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-class";
+            case "Ingress/tls" -> "TLS hosts plus secret. Docs: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls";
+            case "PersistentVolumeClaim/phase", "PersistentVolumeClaim/storageClass", "PersistentVolume/reclaim" ->
+                "Binding lifecycle. Docs: https://kubernetes.io/docs/concepts/storage/persistent-volumes/";
+            case "ConfigMap/key", "ConfigMap/immutable" ->
+                "Plain-text config; immutable avoids skew. Docs: https://kubernetes.io/docs/concepts/configuration/configmap/";
+            case "Node/condition", "Node/kubelet", "Node/taint" ->
+                "Node health and scheduling. Docs: https://kubernetes.io/docs/concepts/architecture/nodes/";
+            case "Namespace/phase" -> "Active or Terminating. Docs: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/";
+            case "Event/reason", "Event/message", "Event/involved" ->
+                "Controller notes, newest-first. Docs: https://kubernetes.io/docs/reference/kubectl/generated/kubectl_events/";
+            case "Object/kind" -> "API kind. Docs: https://kubernetes.io/docs/reference/kubernetes-api/";
+            case "Object/apiVersion" -> "API group plus version. Docs: https://kubernetes.io/docs/reference/using-api/#api-groups-and-versioning";
+            case "Object/name" -> "Unique inside kind plus namespace. Docs: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/";
+            case "Object/namespace" -> "Project folder inside the cluster. Docs: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/";
+            case "Object/label" -> "Identity for selectors. Docs: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/";
+            case "Object/annotation" -> "Tooling metadata, not selectable. Docs: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/";
+            default -> null;
+        };
+    }
+
     public static Inspection inspect(HasMetadata resource) {
         List<Section> sections = new ArrayList<>();
         List<Relation> relations = new ArrayList<>();

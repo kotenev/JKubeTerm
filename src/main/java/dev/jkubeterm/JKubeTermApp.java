@@ -6,8 +6,6 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
-import javafx.geometry.Orientation;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -42,6 +40,7 @@ public final class JKubeTermApp extends Application {
     private final Label catalogHint = new Label();
     private final java.util.Map<TreeItem<String>, ResourceInspector.ExportableEntry> exportableNodes = new java.util.WeakHashMap<>();
     private final java.util.Map<TreeItem<String>, DrillDown.Target> drillNodes = new java.util.WeakHashMap<>();
+    private final java.util.Map<TreeItem<String>, RowHelp> rowHelpNodes = new java.util.WeakHashMap<>();
     private final Label status = new Label("Choose a context");
     private final TextField filter = new TextField();
     private final CheckBox editMode = new CheckBox("Edit YAML");
@@ -118,7 +117,9 @@ public final class JKubeTermApp extends Application {
             ResourceInspector.ExportableEntry entry = exportableNodes.get(selected);
             if (entry != null) { exportEntry(entry); return; }
             DrillDown.Target target = drillNodes.get(selected);
-            if (target != null) followTarget(target);
+            if (target != null) { followTarget(target); return; }
+            RowHelp rowHelp = rowHelpNodes.get(selected);
+            if (rowHelp != null) showRowHelp(rowHelp);
         });
         details.setEditable(false); details.setWrapText(false); details.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
         console.setEditable(false); console.setWrapText(true); console.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 12px;");
@@ -162,6 +163,10 @@ public final class JKubeTermApp extends Application {
         MenuItem quickstart = new MenuItem("QuickStart — minikube home lab"); quickstart.setOnAction(e -> help("QuickStart", quickstartText()));
         MenuItem about = new MenuItem("About JKubeTerm"); about.setOnAction(e -> help("About JKubeTerm", aboutText()));
         helpMenu.getItems().addAll(userGuide, adminGuide, quickstart, new SeparatorMenuItem(), about);
+        MenuItem wikiItem = new MenuItem("Practices Wiki…"); wikiItem.setOnAction(e -> openPracticesWiki());
+        MenuItem whatsNewItem = new MenuItem("What's new in Kubernetes…"); whatsNewItem.setOnAction(e -> openWhatsNew());
+        MenuItem attrHelpItem = new MenuItem("Attribute help…"); attrHelpItem.setOnAction(e -> openAttributeHelp());
+        helpMenu.getItems().addAll(new SeparatorMenuItem(), wikiItem, whatsNewItem, attrHelpItem);
         Menu tutorialMenu = new Menu("Tutorial");
         MenuItem guidedTour = new MenuItem("Start guided tour"); guidedTour.setOnAction(e -> startTutorial(Tutorial.guidedTour()));
         MenuItem firstDeploy = new MenuItem("First deploy drill"); firstDeploy.setOnAction(e -> startTutorial(Tutorial.firstDeploy()));
@@ -197,6 +202,14 @@ public final class JKubeTermApp extends Application {
             status.setText(available.size() + " contexts from " + paths.size() + " kubeconfig file(s)");
         } catch (Exception ex) { error("Cannot read kubeconfig", ex); }
     }
+    private String cachedVersion;
+    private String cachedVersion() {
+        if (cachedVersion != null || service == null) return cachedVersion;
+        try {
+            cachedVersion = service.version();
+        } catch (Exception ignored) { /* version-gated highlights stay off */ }
+        return cachedVersion;
+    }
     private void connect() {
         var selected = contexts.getValue(); if (selected == null) { info("Select a kubeconfig context first."); return; }
         status.setText("Connecting to " + selected.name() + "…");
@@ -208,6 +221,7 @@ public final class JKubeTermApp extends Application {
                 var ns = next.namespaces();
                 Platform.runLater(() -> {
                     KubernetesService old = service; service = next;
+                    cachedVersion = null;
                     if (old != null) old.close();
                     namespaces.setItems(FXCollections.observableArrayList(ns));
                     namespaces.getSelectionModel().select(ns.contains("default") ? "default" : ns.isEmpty() ? null : ns.getFirst());
@@ -282,7 +296,8 @@ public final class JKubeTermApp extends Application {
             TreeItem<String> sectionNode = new TreeItem<>("§ " + section.title());
             sectionNode.setExpanded(section.rows().size() <= 12);
             for (ResourceInspector.Row row : section.rows()) {
-                TreeItem<String> rowNode = new TreeItem<>(row.field() + (row.value().isEmpty() ? "" : ": " + row.value()));
+                TreeItem<String> rowNode = new TreeItem<>("? " + row.field() + (row.value().isEmpty() ? "" : ": " + row.value()));
+                rowHelpNodes.put(rowNode, new RowHelp(item.getKind(), section.title(), row.field(), row.value()));
                 ResourceInspector.ExportableEntry entry = exportableEntry(item, section, row);
                 if (entry != null) {
                     rowNode.setValue("⤓ " + rowNode.getValue());
@@ -307,18 +322,34 @@ public final class JKubeTermApp extends Application {
         objectView.setRoot(root);
         showHoodAndAdvice(item);
     }
+    private record RowHelp(String kind, String section, String field, String value) {}
+    private void showRowHelp(RowHelp rowHelp) {
+        String help = ResourceInspector.helpFor(rowHelp.kind(), rowHelp.field());
+        if (help == null) {
+            String sectionHelp = ResourceInspector.helpFor(rowHelp.kind(), rowHelp.section());
+            help = sectionHelp != null ? sectionHelp
+                : ClusterVisuals.explainKind(rowHelp.kind()) + " Docs: " + ClusterVisuals.docsUrl(rowHelp.kind());
+        }
+        help("Attribute: " + rowHelp.field() + " (" + rowHelp.kind() + ")", rowHelp.field() + " = " + rowHelp.value() + "\n\n" + help);
+    }
     private void showHoodAndAdvice(HasMetadata item) {
         hoodBox.getChildren().clear();
         advisorBox.getChildren().clear();
         Label hood = new Label(hoodTextFor(item));
         hood.setWrapText(true);
-        hoodBox.getChildren().add(hood);
-        List<ClusterAdvisor.Finding> findings = ClusterAdvisor.advise(item);
-        if (findings.isEmpty()) {
-            Label ok = new Label("✓ No best-practice issues detected for this object.");
+        Hyperlink kindDocs = new Hyperlink(ClusterVisuals.docsUrl(item.getKind()));
+        kindDocs.setOnAction(e -> getHostServices().showDocument(ClusterVisuals.docsUrl(item.getKind())));
+        kindDocs.setTooltip(new Tooltip("Official docs: " + item.getKind()));
+        hoodBox.getChildren().addAll(hood, kindDocs);
+        List<ClusterAdvisor.Finding> findings = ClusterAdvisor.advise(item, PracticeRegistry.cached(), cachedVersion());
+        Label registryNote = new Label(PracticeRegistry.cached().size() + " practices in registry (" + PracticeRegistry.userFile() + " overrides by id).");
+        registryNote.setWrapText(true);
+        registryNote.getStyleClass().add("advisor-fix");
+        advisorBox.getChildren().add(registryNote);
+        if (findings.stream().allMatch(f -> f.severity() == ClusterAdvisor.Severity.INFO)) {
+            Label ok = new Label("✓ No WARN/CRITICAL issues — green cards below are passing practices from the wiki.");
             ok.getStyleClass().add("advisor-ok");
             advisorBox.getChildren().add(ok);
-            return;
         }
         for (ClusterAdvisor.Finding finding : findings) {
             HBox row = new HBox(6);
@@ -333,7 +364,20 @@ public final class JKubeTermApp extends Application {
             Label fix = new Label("Fix: " + finding.fix());
             fix.setWrapText(true);
             fix.getStyleClass().add("advisor-fix");
-            text.getChildren().addAll(message, fix);
+            text.getChildren().add(message);
+            text.getChildren().add(fix);
+            if (!finding.docs().isEmpty()) {
+                String link = finding.docs().getFirst();
+                Hyperlink docs = new Hyperlink(link.length() > 72 ? link.substring(0, 72) + "…" : link);
+                docs.setOnAction(e -> getHostServices().showDocument(link));
+                docs.setTooltip(new Tooltip(link));
+                text.getChildren().add(docs);
+                if (finding.docs().size() > 1) {
+                    Label more = new Label("+" + (finding.docs().size() - 1) + " more doc links in Practices Wiki");
+                    more.getStyleClass().add("advisor-fix");
+                    text.getChildren().add(more);
+                }
+            }
             HBox.setHgrow(text, Priority.ALWAYS);
             row.getChildren().addAll(badge, text);
             row.getStyleClass().add("advisor-" + finding.severity().name().toLowerCase());
@@ -628,6 +672,71 @@ public final class JKubeTermApp extends Application {
         alert.setTitle(title); alert.setHeaderText(title);
         alert.getDialogPane().setMinWidth(560);
         alert.show();
+    }
+    private void openPracticesWiki() {
+        List<PracticeRegistry.Practice> practices = new ArrayList<>(PracticeRegistry.cached());
+        ChoiceDialog<PracticeRegistry.Practice> pick = new ChoiceDialog<>(practices.isEmpty() ? null : practices.getFirst(), practices);
+        pick.setTitle("Practices Wiki");
+        pick.setHeaderText(practices.size() + " practices — view or edit the Markdown DB");
+        pick.setContentText("Practice:");
+        pick.getDialogPane().setMinWidth(640);
+        pick.showAndWait().ifPresent(selected -> {
+            if (selected == null) return;
+            Alert view = new Alert(Alert.AlertType.INFORMATION);
+            view.setTitle("Practice: " + selected.id());
+            view.setHeaderText("[" + selected.severity() + "] " + selected.title());
+            StringBuilder body = new StringBuilder();
+            body.append(selected.why()).append("\n\nFix: ").append(selected.fix());
+            if (!selected.docs().isEmpty()) body.append("\n\nDocs:\n").append(String.join("\n", selected.docs()));
+            body.append(selected.builtin() ? "\n\n(bundled — copy to " + PracticeRegistry.userFile() + " to override)"
+                : "\n\n(user override)");
+            view.setContentText(body.toString());
+            view.getDialogPane().setMinWidth(640);
+            ButtonType edit = new ButtonType("Open wiki file");
+            ButtonType reload = new ButtonType("Reload");
+            view.getButtonTypes().addAll(edit, reload);
+            view.showAndWait().ifPresent(type -> {
+                if (type == edit) openWikiFile();
+                if (type == reload) { PracticeRegistry.reload(); output("Practices wiki reloaded: " + PracticeRegistry.cached().size() + " practices.\n"); }
+            });
+        });
+    }
+    private void openWikiFile() {
+        try {
+            Path file = PracticeRegistry.userFile();
+            if (!Files.isRegularFile(file)) {
+                PracticeRegistry.saveUserFile(file, PracticeRegistry.cached());
+                output("Created user wiki at " + file + " — edit it in Markdown, then Reload.\n");
+            }
+            getHostServices().showDocument(file.toUri().toString());
+        } catch (Exception ex) { error("Cannot open wiki file", ex); }
+    }
+    private void openWhatsNew() {
+        List<PracticeRegistry.Highlight> highlights = PracticeRegistry.highlights();
+        if (highlights.isEmpty()) { info("No version highlights bundled (whats-new.md missing)."); return; }
+        String serverVersion = service == null ? null : safeVersion();
+        StringBuilder body = new StringBuilder();
+        if (serverVersion != null) body.append("Connected server reports: ").append(serverVersion).append("\n\n");
+        for (PracticeRegistry.Highlight highlight : highlights) {
+            body.append("## ").append(highlight.version()).append('\n');
+            if (!highlight.stable().isEmpty()) body.append(highlight.stable()).append('\n');
+            if (!highlight.docs().isEmpty()) body.append("Docs: ").append(String.join(", ", highlight.docs())).append('\n');
+            body.append("Lab: ").append(highlight.lab()).append('\n');
+            body.append("Fix: ").append(highlight.fix()).append("\n\n");
+        }
+        help("What's new in Kubernetes", body.toString().strip());
+    }
+    private String safeVersion() {
+        try { return service.version(); } catch (Exception e) { return "unknown (" + e.getMessage() + ")"; }
+    }
+    private void openAttributeHelp() {
+        HasMetadata item = table.getSelectionModel().getSelectedItem();
+        if (item == null) { info("Select a table row first — attribute help explains the selected object's fields."); return; }
+        TreeItem<String> selected = objectView.getSelectionModel().getSelectedItem();
+        String field = selected == null || selected.getValue() == null ? "Object" : selected.getValue().replaceFirst("^[?⤓§⇄ ]+ ", "").split(":")[0].trim();
+        String helpText = ResourceInspector.helpFor(item.getKind(), field);
+        if (helpText == null) helpText = ClusterVisuals.explainKind(item.getKind()) + " Docs: " + ClusterVisuals.docsUrl(item.getKind());
+        help("Attribute: " + field + " (" + item.getKind() + ")", field + "\n\n" + helpText);
     }
     private String userGuideText() {
         return """

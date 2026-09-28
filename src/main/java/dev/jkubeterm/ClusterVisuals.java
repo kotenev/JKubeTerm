@@ -69,4 +69,25 @@ public final class ClusterVisuals {
         return DrillDown.kindForKindName(kindName).map(ClusterVisuals::explain)
             .orElse("A Kubernetes object — select it to see its YAML, object breakdown and relations.");
     }
+
+    public static String docsUrl(String kindName) {
+        if (kindName == null) return "https://kubernetes.io/docs/home/";
+        return switch (kindName) {
+            case "Pod" -> "https://kubernetes.io/docs/concepts/workloads/pods/";
+            case "Deployment" -> "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/";
+            case "StatefulSet" -> "https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/";
+            case "DaemonSet" -> "https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/";
+            case "Service" -> "https://kubernetes.io/docs/concepts/services-networking/service/";
+            case "ConfigMap" -> "https://kubernetes.io/docs/concepts/configuration/configmap/";
+            case "Secret" -> "https://kubernetes.io/docs/concepts/configuration/secret/";
+            case "Job" -> "https://kubernetes.io/docs/concepts/workloads/controllers/job/";
+            case "CronJob" -> "https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/";
+            case "Ingress" -> "https://kubernetes.io/docs/concepts/services-networking/ingress/";
+            case "PersistentVolumeClaim", "PersistentVolume" -> "https://kubernetes.io/docs/concepts/storage/persistent-volumes/";
+            case "Node" -> "https://kubernetes.io/docs/concepts/architecture/nodes/";
+            case "Namespace" -> "https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/";
+            case "Event" -> "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_events/";
+            default -> "https://kubernetes.io/docs/home/";
+        };
+    }
 }

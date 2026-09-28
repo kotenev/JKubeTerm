@@ -222,6 +222,29 @@ message + Fix), or a green «no issues» label. Covered by
 `ClusterVisualsAdvisorTest` (icons distinct + valid hex, explain fallback,
 advisor triggers, compliant-pod quiet, hood text).
 
+### Practices wiki, per-kind docs, version highlights, attribute help
+
+`PracticeRegistry` (`src/main/java/dev/jkubeterm/PracticeRegistry.java:19`)
+is a Markdown wiki DB: bundled `/practices.md` (38 practices, one
+`## practice <id>` section with `Kinds/Severity/Title/Docs/### Why/### Fix`),
+user overrides at `~/.jkubeterm/practices.md` merged by id (user wins).
+`ClusterAdvisor.advise(resource, registry, serverVersion)` resolves every
+finding's text through the registry (user edits change messages without code
+changes) and backfills passing practices as green INFO cards — «No issues»
+never appears while the wiki is non-empty. Every finding carries `docs()` URLs
+rendered as clickable `Hyperlink`s (first link inline, count of the rest).
+`ClusterVisuals.docsUrl(kind)` maps each kind to its kubernetes.io reference.
+Object-view rows are prefixed `?` — double-click opens an attribute help dialog
+(`ResourceInspector.helpFor(kind, field)` with ~25 mapped attributes plus
+section and kind fallback). Help menu gains **Practices Wiki…** (picker →
+full Why/Fix/Docs view → Open wiki file / Reload), **What's new in
+Kubernetes…** (`/whats-new.md` highlights per version plus the connected
+server's reported version), **Attribute help…** (help for the selected row or
+row field). Version-gated advisor checks (`parseVersion`, `versionChecks`):
+StatefulSet retention hints on 1.35+, Job successPolicy on 1.36+, Pod resources
+on 1.37+. Covered by `PracticeRegistryTest` (bundled size, user override,
+highlights, kind filter) and `versionGatedHighlights`.
+
 ## 3. `KubernetesService` — Fabric8 facade
 
 `public final class KubernetesService implements AutoCloseable`
