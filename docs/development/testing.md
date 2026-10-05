@@ -2,13 +2,15 @@
 
 ## Current suite
 
-`src/test/java/dev/jkubeterm/KubeconfigLoaderTest.java` (JUnit Jupiter
-5.11.4, `mvn test`):
+JUnit Jupiter 5.11.4, `mvn test` (Surefire `useModulePath=false`, no JavaFX in
+tests). 12 test classes, ~85 tests, incl. `AssistantEngineTest` (15 tests:
+intents, severity ranking, Secret masking, wiki search, read-only kubectl):
 
 | Test | Verifies |
 |---|---|
 | `discoversContextsWithoutClusterConnection` | `KubeconfigLoader.contexts` parses two synthetic contexts (`minikube`, `development`) from a temp kubeconfig — order preserved, no cluster needed |
 | `missingPathIsIgnored` | `KubeconfigLoader.paths` skips non-existent entries and returns an empty list |
+| `AssistantEngineTest` | Offline assistant: empty/null question, write-refusal, diagnose ranking (CRITICAL first), wiki search, read-only kubectl, Secret masking |
 
 ## What is covered vs. not
 

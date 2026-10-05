@@ -24,11 +24,12 @@ public final class AppConfig {
     public record Settings(double windowX, double windowY, double windowWidth, double windowHeight,
                            double mainDivider0, double mainDivider1,
                            double rightDivider0, double rightDivider1, double rightDivider2, double rightDivider3, double rightDivider4,
+                           double rightDivider5,
                            double bottomDivider, double shelfDivider, double atticDivider,
                            String dockedSections,
                            String fontFamily, double fontSize, double uiZoom) {
         public static Settings defaults() {
-            return new Settings(Double.NaN, Double.NaN, 1380, 840, 0.15, 0.55, 0.14, 0.34, 0.52, 0.68, 0.82, 0.78, 0.5, 0.12, "", "System", DEFAULT_FONT, 1.0);
+            return new Settings(Double.NaN, Double.NaN, 1380, 840, 0.15, 0.55, 0.12, 0.26, 0.40, 0.54, 0.68, 0.80, 0.78, 0.5, 0.12, "", "System", DEFAULT_FONT, 1.0);
         }
     }
 
@@ -62,6 +63,7 @@ public final class AppConfig {
         props.setProperty("divider.right.2", Double.toString(settings.rightDivider2()));
         props.setProperty("divider.right.3", Double.toString(settings.rightDivider3()));
         props.setProperty("divider.right.4", Double.toString(settings.rightDivider4()));
+        props.setProperty("divider.right.5", Double.toString(settings.rightDivider5()));
         props.setProperty("divider.bottom", Double.toString(settings.bottomDivider()));
         props.setProperty("divider.shelf", Double.toString(settings.shelfDivider()));
         props.setProperty("divider.attic", Double.toString(settings.atticDivider()));
@@ -88,6 +90,7 @@ public final class AppConfig {
             clamp01(props, "divider.right.2", defaults.rightDivider2()),
             clamp01(props, "divider.right.3", defaults.rightDivider3()),
             clamp01(props, "divider.right.4", defaults.rightDivider4()),
+            clamp01(props, "divider.right.5", defaults.rightDivider5()),
             clamp01(props, "divider.bottom", defaults.bottomDivider()),
             clamp01(props, "divider.shelf", defaults.shelfDivider()),
             clamp01(props, "divider.attic", defaults.atticDivider()),

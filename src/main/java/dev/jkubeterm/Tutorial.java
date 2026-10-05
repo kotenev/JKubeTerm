@@ -8,7 +8,8 @@ import java.util.List;
  * {@code JKubeTermApp.tutorialNode(String)}. Known ids:
  * contexts, connect, reload-contexts, namespaces, refresh, kinds, filter,
  * table, details, editMode, apply, remove, logs, shell, forward, scale,
- * restart, helm, addons, save, newYaml, diagnose, hood, advisor, console, status.
+ * restart, helm, addons, save, newYaml, diagnose, hood, advisor, assistant,
+ * console, status.
  */
 public record Tutorial(String name, String doneText, List<Step> steps) {
     public record Step(String title, String body, List<String> targetIds, List<String> advanceOn) {
@@ -31,8 +32,8 @@ public record Tutorial(String name, String doneText, List<Step> steps) {
                     "Pick a kind on the left (each has its own vector icon and a one-line explanation under the filter), type into the filter (local, no API calls), then click a table row to load its YAML.",
                     List.of("kinds", "filter", "table"), List.of("select-row")),
                 new Step("4 — Manifest view",
-                    "The row YAML appears read-only on the right. Below it, Under the hood explains what the controllers do with this object, and Best practices flags issues with fixes. Tick Edit YAML to make it editable.",
-                    List.of("details", "hood", "advisor", "editMode"), List.of("edit-mode")),
+                    "The row YAML appears read-only on the right. Below it, Under the hood explains what the controllers do with this object, Best practices flags issues with fixes, and the offline AI assistant answers what/why/kubectl questions about the selected row. Tick Edit YAML to make it editable.",
+                    List.of("details", "hood", "advisor", "assistant", "editMode"), List.of("edit-mode")),
                 new Step("5 — Apply flow",
                     "Press New YAML for a ConfigMap template, edit it, then Apply YAML (confirm dialog, server-side apply). Save YAML exports locally.",
                     List.of("newYaml", "apply", "save"), List.of("apply")),

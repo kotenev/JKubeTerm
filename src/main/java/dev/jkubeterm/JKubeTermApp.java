@@ -36,6 +36,9 @@ public final class JKubeTermApp extends Application {
     private final TreeView<String> objectView = new TreeView<>();
     private final VBox hoodBox = new VBox(4);
     private final VBox advisorBox = new VBox(4);
+    private final VBox assistantBox = new VBox(4);
+    private TextArea assistantAnswer;
+    private TextField assistantInput;
     private final Label hoodText = new Label("Select a resource to see what happens under the hood.");
     private final Label catalogHint = new Label();
     private SplitPane rightPane;
@@ -159,15 +162,18 @@ public final class JKubeTermApp extends Application {
         actionsPane = actions;
         VBox actionsSection = labeled("Actions", actionsPane);
         actionsSection.getProperties().put("dockTitle", "Actions");
+        VBox assistantSection = labeled("AI assistant", assistantBox);
+        buildAssistantContent();
         VBox right = new VBox(8, actionsSection,
             labeled("Manifest", details),
             labeled("Object", objectView),
             labeled("Under the hood", hoodBox),
             labeled("Best practices", advisorBox),
+            assistantSection,
             labeled("Output / logs", console));
         SplitPane rightSplit = new SplitPane(right.getChildren().toArray(new Node[0]));
         rightSplit.setOrientation(javafx.geometry.Orientation.VERTICAL);
-        rightSplit.setDividerPositions(0.14, 0.34, 0.52, 0.68, 0.82);
+        rightSplit.setDividerPositions(0.12, 0.26, 0.40, 0.54, 0.68, 0.80);
         rightPane = rightSplit;
         VBox middle = new VBox(8, catalogHint, filter, table); VBox.setVgrow(table, Priority.ALWAYS);
         SplitPane content = new SplitPane(kinds, middle, rightSplit); content.setDividerPositions(.15, .55);
@@ -263,7 +269,7 @@ public final class JKubeTermApp extends Application {
         primaryStage.widthProperty().addListener((obs, old, value) -> persistSettings());
         primaryStage.heightProperty().addListener((obs, old, value) -> persistSettings());
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
-        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3(), appSettings.rightDivider4());
+        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3(), appSettings.rightDivider4(), appSettings.rightDivider5());
         bottomPane.setDividerPositions(appSettings.bottomDivider());
         shelfPane.setDividerPositions(appSettings.shelfDivider());
         atticPane.setDividerPositions(appSettings.atticDivider());
@@ -595,7 +601,7 @@ public final class JKubeTermApp extends Application {
         stage.setWidth(appSettings.windowWidth());
         stage.setHeight(appSettings.windowHeight());
         contentPane.setDividerPositions(appSettings.mainDivider0(), appSettings.mainDivider1());
-        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3(), appSettings.rightDivider4());
+        rightPane.setDividerPositions(appSettings.rightDivider0(), appSettings.rightDivider1(), appSettings.rightDivider2(), appSettings.rightDivider3(), appSettings.rightDivider4(), appSettings.rightDivider5());
         bottomPane.setDividerPositions(appSettings.bottomDivider());
         shelfPane.setDividerPositions(appSettings.shelfDivider());
         atticPane.setDividerPositions(appSettings.atticDivider());
@@ -612,9 +618,9 @@ public final class JKubeTermApp extends Application {
         AppConfig.Settings next = new AppConfig.Settings(
             stage.getX(), stage.getY(), stage.getWidth(), stage.getHeight(),
             main.length > 0 ? main[0] : 0.15, main.length > 1 ? main[1] : 0.55,
-            right.length > 0 ? right[0] : 0.34, right.length > 1 ? right[1] : 0.52,
-            right.length > 2 ? right[2] : 0.68, right.length > 3 ? right[3] : 0.82,
-            right.length > 4 ? right[4] : 0.9,
+            right.length > 0 ? right[0] : 0.26, right.length > 1 ? right[1] : 0.40,
+            right.length > 2 ? right[2] : 0.54, right.length > 3 ? right[3] : 0.68,
+            right.length > 4 ? right[4] : 0.80, right.length > 5 ? right[5] : 0.90,
             bottom.length > 0 ? bottom[0] : 0.78, shelf.length > 0 ? shelf[0] : 0.5,
             attic.length > 0 ? attic[0] : 0.12,
             dockedSections(),
@@ -622,6 +628,53 @@ public final class JKubeTermApp extends Application {
         try {
             AppConfig.save(next);
         } catch (Exception ignored) { /* config is best-effort */ }
+    }
+    private void buildAssistantContent() {
+        assistantAnswer = new TextArea("Оффлайн-помощник: только локальные данные, без сети. Только чтение.\n"
+            + "Спросите: «что это?», «почему Pod в CrashLoop?», «какие команды?», «seccomp», «как подключиться».");
+        assistantAnswer.setEditable(false);
+        assistantAnswer.setWrapText(true);
+        assistantAnswer.setPrefRowCount(7);
+        assistantInput = new TextField();
+        assistantInput.setPromptText("Спросить помощника… (Enter — отправить, контекст: выбранная строка)");
+        assistantInput.setOnAction(e -> askAssistant());
+        Button ask = new Button("Ask");
+        ask.setOnAction(e -> askAssistant());
+        Button explain = new Button("Explain");
+        explain.setOnAction(e -> { assistantInput.setText("что это?"); askAssistant(); });
+        Button diagnose = new Button("Diagnose");
+        diagnose.setOnAction(e -> { assistantInput.setText("почему? диагностика"); askAssistant(); });
+        Button commands = new Button("kubectl");
+        commands.setOnAction(e -> { assistantInput.setText("какие команды?"); askAssistant(); });
+        HBox row = new HBox(6, assistantInput, ask, explain, diagnose, commands);
+        HBox.setHgrow(assistantInput, Priority.ALWAYS);
+        Label note = new Label("Оффлайн · только чтение: изменения — через кнопки с подтверждением.");
+        note.setWrapText(true);
+        note.getStyleClass().add("advisor-fix");
+        assistantBox.getChildren().addAll(assistantAnswer, row, note);
+    }
+    private void askAssistant() {
+        if (assistantInput == null || assistantAnswer == null) return;
+        String question = assistantInput.getText() == null ? "" : assistantInput.getText().strip();
+        if (question.isEmpty()) { assistantAnswer.setText("Введите вопрос — например «что это?», «почему?», «какие команды?»."); return; }
+        HasMetadata selected = table.getSelectionModel().getSelectedItem();
+        String ns = namespaces.getValue();
+        assistantAnswer.setText("Думаю… (оффлайн, только локальные данные)");
+        status.setText("Assistant: analysing…");
+        // Snapshot the FX state (Fabric8 objects may be lazily loaded off the FX
+        // thread), then run the pure engine on the worker — never blocks the UI.
+        task(() -> {
+            List<ClusterAdvisor.Finding> findings = selected == null ? List.of()
+                : ClusterAdvisor.advise(selected, PracticeRegistry.cached(), cachedVersion());
+            AssistantEngine.Answer response = AssistantEngine.answer(
+                question, selected, findings, PracticeRegistry.cached(), ns);
+            Platform.runLater(() -> {
+                String context = selected == null || selected.getMetadata() == null ? "(без выбора)"
+                    : selected.getKind() + " '" + selected.getMetadata().getName() + "'";
+                assistantAnswer.setText("Q (" + context + "): " + question + "\n\n" + response.text());
+                status.setText("Assistant: done.");
+            });
+        });
     }
     private void showHoodAndAdvice(HasMetadata item) {
         hoodBox.getChildren().clear();
@@ -1174,6 +1227,7 @@ public final class JKubeTermApp extends Application {
             case "objectView" -> objectView;
             case "hood" -> hoodBox;
             case "advisor" -> advisorBox;
+            case "assistant" -> assistantBox;
             case "editMode" -> editMode;
             case "apply" -> applyButton;
             case "remove" -> removeButton;

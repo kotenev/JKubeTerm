@@ -45,12 +45,19 @@ doc-ссылкой на kubernetes.io). Best practices свёрнуты в дв�
 TitledPane (⚠️ Issues / ✓ Passing): однострочные кликабельные карточки
 `[check-id] заголовок` открывают wiki-диалог (дабл-клик тоже).
 Реестр практик — Markdown-база (`Practices Wiki…` в Help: просмотр, правление
-`~/.jkubeterm/practices.md`, Reload без перезапуска). Правая колонка — SplitPane
-с разделителями (Manifest / Object / Under the hood / Best practices / Output),
-позиции и размер окна хранятся в `~/.jkubeterm/config.properties`; меню Settings:
-Font (семейство + размер), Zoom in/out/reset (⌘+/⌘-/⌘0), Reset layout. Строки Object view кликабельны (`?` — помощь по
-атрибуту со ссылкой на доку, `⤓` — экспорт PEM). «What's new in Kubernetes…»
-показывает новинки версии сервера.
+`~/.jkubeterm/practices.md`, Reload без перезапуска). Секция **AI assistant**
+под Best practices — оффлайн-помощник без сети и без новых зависимостей:
+поле ввода + Ask/Explain/Diagnose/kubectl, контекст — выбранная строка
+(находит CRITICAL/WARN из `ClusterAdvisor`, секции `ResourceInspector`,
+wiki `PracticeRegistry`, доки kubernetes.io); ответы только текстом, Secret'ы
+не печатаются, записи в кластер нет — для изменений кнопки с confirm
+(Apply/Delete/Scale/Restart). Правая колонка — SplitPane с разделителями
+(Manifest / Object / Under the hood / Best practices / AI assistant / Output),
+позиции и размер окна хранятся в `~/.jkubeterm/config.properties`
+(`divider.right.0-5`); меню Settings: Font (семейство + размер),
+Zoom in/out/reset (⌘+/⌘-/⌘0), Reset layout. Строки Object view кликабельны
+(`?` — помощь по атрибуту со ссылкой на доку, `⤓` — экспорт PEM).
+«What's new in Kubernetes…» показывает новинки версии сервера.
 
 Двойной клик по строке таблицы (или правый клик → Drill down…) открывает
 связанные ресурсы: Pod → Node/Events/Services/ConfigMap/PVC/Job, Deployment →

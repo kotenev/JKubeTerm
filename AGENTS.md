@@ -1,6 +1,6 @@
 # JKubeTerm — Agent Notes
 
-Single-module Maven Java 21 JavaFX desktop K8s client (`dev.jkubeterm:jkubeterm:0.1.0`). No monorepo, no CI, no linter. All main code flat in `src/main/java/dev/jkubeterm/` (14 classes); entrypoint `dev.jkubeterm.JKubeTermApp`.
+Single-module Maven Java 21 JavaFX desktop K8s client (`dev.jkubeterm:jkubeterm:0.1.0`). No monorepo, no CI, no linter. All main code flat in `src/main/java/dev/jkubeterm/` (15 classes); entrypoint `dev.jkubeterm.JKubeTermApp`.
 
 ## Build / run / test (JDK 21)
 
@@ -21,12 +21,14 @@ Single-module Maven Java 21 JavaFX desktop K8s client (`dev.jkubeterm:jkubeterm:
 - `KubeconfigLoader`: parses `KUBECONFIG` multi-path via `File.pathSeparator`, skips missing files, dedups by context name (first wins). Relative cert/key paths are resolved by Fabric8 against the kubeconfig file path — do not re-resolve manually.
 - `ExternalTools`: argv-based `ProcessBuilder`, never a shell. Sets `KUBECONFIG` env to the context file; `kubectl`/`helm` argv always include `--context/--kube-context --kubeconfig --namespace`. `kubectl`/`helm` must be on `PATH`; port-forward binds `127.0.0.1`.
 - YAML apply is `client.resource(obj).serverSideApply()` (create-or-replace, not `kubectl apply`), requires `kind`/`apiVersion`/`metadata.name`, defaults namespace for non-cluster-scoped kinds. All destructive ops (apply/delete/scale/restart) require UI confirmation — never auto-execute on load.
-- `AppConfig` (`~/.jkubeterm/config.properties`) is plain-properties + clamping, no JavaFX — keep it unit-testable.
+- `AppConfig` (`~/.jkubeterm/config.properties`) is plain-properties + clamping, no JavaFX — keep it unit-testable. Right-pane `divider.right.0-5` must match the section count (Actions excluded; Manifest/Object/Hood/Best-practices/Assistant/Output).
+- `AssistantEngine` is offline-only (no network, no new deps), pure logic + no JavaFX — unit-tested via `AssistantEngineTest`. Intent order: diagnose → app help → kubectl → explain → write-refusal → wiki search. Read-only promise: Secret values masked, kubectl snippets are get/describe/logs/events only.
 - TLS verification stays enabled (kubeconfig CA/client certs via Fabric8). Never add `trustCerts=true` as a workaround.
 
 ## Testing conventions
 
 - `docs/development/testing.md` coverage table is stale (lists only `KubeconfigLoaderTest`; there are 9 test classes). Pure logic (path resolution, argv shape, validation, clamping) → plain JUnit 5 unit tests, no cluster. Cluster-touching code belongs behind `KubernetesService`; use Fabric8 mock server, never a live cluster. JavaFX UI is manual-only (`mvn javafx:run`); never instantiate `Application` in tests.
+- `pom.xml` surefire/javafx flags must stay JDK 21-compatible: no `--sun-misc-unsafe-memory-access=allow` (JDK 25-only flag; JDK 21 JVM fails to boot with it). Keep `--enable-native-access=javafx.graphics` only.
 - Do not edit build outputs: `target/`, `site/`, `docs/**/*.pdf` (gitignored).
 
 ## Docs
