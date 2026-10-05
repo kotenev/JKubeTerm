@@ -258,18 +258,18 @@ public final class AssistantEngine {
             : "Read-only commands for " + kind + " '" + name + "' (ns=" + ns + "):\n");
         out.append("kubectl get ").append(kind).append(' ').append(name).append(" -n ").append(ns).append(" -o yaml\n");
         out.append("kubectl describe ").append(kind).append(' ').append(name).append(" -n ").append(ns).append('\n');
-        if ("pod".equals(kind)) {
-            out.append("kubectl logs ").append(name).append(" -n ").append(ns).append(" --tail=500\n");
-            out.append("kubectl get events -n ").append(ns).append(" --sort-by=.lastTimestamp\n");
-        } else if ("deployment".equals(kind)) {
-            out.append("kubectl rollout status deployment/").append(name).append(" -n ").append(ns).append('\n');
-            out.append("kubectl get events -n ").append(ns).append(" --sort-by=.lastTimestamp\n");
-        } else if ("service".equals(kind)) {
-            out.append("kubectl get endpoints ").append(name).append(" -n ").append(ns).append('\n');
-        } else if ("ingress".equals(kind)) {
-            out.append("kubectl get ingress ").append(name).append(" -n ").append(ns).append(" -o wide\n");
-        } else {
-            out.append("kubectl get events -n ").append(ns).append(" --sort-by=.lastTimestamp\n");
+        switch (kind) {
+            case "pod" -> {
+                out.append("kubectl logs ").append(name).append(" -n ").append(ns).append(" --tail=500\n");
+                out.append("kubectl get events -n ").append(ns).append(" --sort-by=.lastTimestamp\n");
+            }
+            case "deployment" -> {
+                out.append("kubectl rollout status deployment/").append(name).append(" -n ").append(ns).append('\n');
+                out.append("kubectl get events -n ").append(ns).append(" --sort-by=.lastTimestamp\n");
+            }
+            case "service" -> out.append("kubectl get endpoints ").append(name).append(" -n ").append(ns).append('\n');
+            case "ingress" -> out.append("kubectl get ingress ").append(name).append(" -n ").append(ns).append(" -o wide\n");
+            default -> out.append("kubectl get events -n ").append(ns).append(" --sort-by=.lastTimestamp\n");
         }
         out.append(ru ? "Изменения — только через кнопки Apply/Delete/Scale/Restart с подтверждением."
             : "Writes go only through Apply/Delete/Scale/Restart buttons with confirmation.");
@@ -357,18 +357,20 @@ public final class AssistantEngine {
         String head = ru ? "Оффлайн-помощник (без сети, только локальная wiki). Умею:\n"
             : "Offline assistant (no network, local wiki only). I can:\n";
         String body = ru
-            ? "• Объяснить выбранный объект («что это?», «объясни»)\n"
-            + "• Найти причину («почему Pod в CrashLoop?», «диагностика»)\n"
-            + "• Подсказать read-only kubectl («какие команды?»)\n"
-            + "• Ответить из best-practices wiki («seccomp», «probes», «tls»)\n"
-            + "• Подсказать по приложению («как подключиться»)\n"
-            + "Выберите строку для контекста. Не применяю и не удаляю — только объясняю."
-            : "• Explain the selected object (“what is this?”, “explain”)\n"
-            + "• Diagnose (“why is this Pod in CrashLoop?”, “diagnose”)\n"
-            + "• Suggest read-only kubectl (“which commands?”)\n"
-            + "• Answer from the best-practices wiki (“seccomp”, “probes”, “tls”)\n"
-            + "• Help with the app (“how to connect”)\n"
-            + "Select a row for context. I never apply or delete — explanations only.";
+            ? """
+                • Объяснить выбранный объект («что это?», «объясни»)
+                • Найти причину («почему Pod в CrashLoop?», «диагностика»)
+                • Подсказать read-only kubectl («какие команды?»)
+                • Ответить из best-practices wiki («seccomp», «probes», «tls»)
+                • Подсказать по приложению («как подключиться»)
+                Выберите строку для контекста. Не применяю и не удаляю — только объясняю."""
+            : """
+                • Explain the selected object (“what is this?”, “explain”)
+                • Diagnose (“why is this Pod in CrashLoop?”, “diagnose”)
+                • Suggest read-only kubectl (“which commands?”)
+                • Answer from the best-practices wiki (“seccomp”, “probes”, “tls”)
+                • Help with the app (“how to connect”)
+                Select a row for context. I never apply or delete — explanations only.""";
         // When appended after an explanation the head is redundant.
         return (appended ? body : head + body) + "\n" + offlineFooter(ru);
     }
@@ -397,7 +399,7 @@ public final class AssistantEngine {
             if (score > 0) scores.put(p, score);
         }
         return scores.entrySet().stream()
-            .sorted(Map.Entry.<PracticeRegistry.Practice, Integer>comparingByValue(Comparator.reverseOrder()))
+            .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
             .limit(MAX_PRACTICES).map(Map.Entry::getKey).toList();
     }
 
